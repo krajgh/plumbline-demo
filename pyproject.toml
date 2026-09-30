@@ -1,0 +1,11 @@
+[project]
+name = "tasklist"
+version = "0.1.0"
+description = "A tiny to-do list for the command line."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
