@@ -69,9 +69,16 @@ def cmd_list(args: argparse.Namespace, path: Path) -> int:
     tasks = store.load(path)
     if args.overdue:
         try:
-            shown = core.overdue_tasks(tasks, today())
+            now = today()
         except ValueError:
             return fail(f"invalid {TODAY_ENV_VAR}: {os.environ[TODAY_ENV_VAR]}")
+        for task in tasks:  # a bad stored due date is reported by the task's id
+            if not task["done"] and "due" in task:
+                try:
+                    core.parse_date(task["due"])
+                except ValueError:
+                    return fail(f"task {task['id']} has an invalid due date: {task['due']}")
+        shown = core.overdue_tasks(tasks, now)
     else:
         shown = core.visible_tasks(tasks, show_all=args.show_all)
     for task in shown:

@@ -226,3 +226,37 @@ def test_ac6_a_010_file_keeps_working_and_done_adds_no_due_key(
 
     assert run(tasks_file, "done", "1") == 0
     assert store.load(tasks_file) == [{**TASKS[0], "done": True}, TASKS[1]]
+
+
+# --- malformed stored due date under list --overdue ---
+
+
+def run_overdue_with_bad_due(tmp_path):
+    """Run list --overdue on a file whose open task 1 has due "soon"; return (status, exception)."""
+    path = tmp_path / "tasks.json"
+    store.save(path, [{"id": 1, "title": "a", "done": False, "due": "soon"}])
+    try:
+        return run(path, "list", "--overdue"), None
+    except Exception as exc:  # today's code may crash; the test asserts it does not
+        return None, exc
+
+
+@pytest.mark.parametrize("today", [None, "2026-10-01"])
+def test_ac1_overdue_with_a_malformed_stored_due_names_the_task(
+    tmp_path, monkeypatch, capsys, today
+):
+    if today is None:
+        monkeypatch.delenv("TASKLIST_TODAY", raising=False)
+    else:
+        monkeypatch.setenv("TASKLIST_TODAY", today)
+
+    status, exc = run_overdue_with_bad_due(tmp_path)
+
+    assert exc is None, f"main() raised {exc!r}"
+    assert status == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    lines = captured.err.splitlines()
+    assert len(lines) == 1
+    assert "1" in lines[0] and "soon" in lines[0]
+    assert "TASKLIST_TODAY" not in lines[0]
