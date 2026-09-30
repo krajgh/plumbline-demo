@@ -1,0 +1,29 @@
+# plumbline: per-repository configuration. Commit this file.
+schema = 1
+pipeline = "default"        # a pipeline shipped in the plugin's pipeline/, or a repo-relative path
+
+# Optional overrides. Top-level keys such as `precedence` must stay above the first [table].
+# precedence = ["voice", "code", "config", "tests", "docs"]   # replaces the pipeline's list; it must name every type
+
+[graft]
+enabled = false
+
+# A type of your own is tried before the pipeline's own types:
+# [[type]]
+# id = "voice"
+# paths = ["voice/**"]
+#
+# A row replaces the pipeline's row for that type, or adds one for a new type:
+# [matrix.voice]
+# stages = ["intake", "reduce"]
+# note = "Voice and prompt changes go through this repository's own evals."
+#
+# The commands the verifier and the test-writer run, and that `plumbline.py gate` runs itself from the repository
+# root (each a command prefix, or a list of prefixes; `gate` runs the first). The verify stage needs `test`: without it
+# the gate has nothing to run. A pytest command also gets a junit report, which keeps the count of tests from shrinking.
+[commands]
+test = "uv run --no-project --with pytest pytest -q"
+# lint = "ruff check"
+# typecheck = "mypy ."
+# build = "make build"
+# timeout = 900               # seconds each command may run under `gate`
