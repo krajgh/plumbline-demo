@@ -96,3 +96,133 @@ def test_python_dash_m_exits_with_the_status_from_main(tasks_file):
 
     assert result.returncode == 2
     assert result.stderr == "error: no task with id 99\n"
+
+
+# --- due dates ---
+
+DATED = [
+    {"id": 1, "title": "Buy milk", "done": False},
+    {"id": 2, "title": "Pay rent", "done": False, "due": "2026-10-01"},
+    {"id": 3, "title": "Call Sam", "done": True, "due": "2026-01-05"},
+]
+
+OVERDUE = [
+    {"id": 1, "title": "a", "done": False, "due": "2026-09-30"},
+    {"id": 2, "title": "b", "done": False, "due": "2026-09-01"},
+    {"id": 3, "title": "c", "done": False, "due": "2026-10-01"},
+    {"id": 4, "title": "d", "done": False, "due": "2026-12-01"},
+    {"id": 5, "title": "e", "done": False},
+    {"id": 6, "title": "f", "done": True, "due": "2026-08-01"},
+    {"id": 7, "title": "g", "done": False, "due": "2026-09-01"},
+]
+
+
+def test_ac1_add_with_due_stores_the_date_and_without_stores_no_key(tmp_path, capsys):
+    path = tmp_path / "tasks.json"
+
+    assert run(path, "add", "Pay rent", "--due", "2026-10-01") == 0
+    assert capsys.readouterr().out == "added 1\n"
+    assert run(path, "add", "Buy milk") == 0
+
+    assert store.load(path) == [
+        {"id": 1, "title": "Pay rent", "done": False, "due": "2026-10-01"},
+        {"id": 2, "title": "Buy milk", "done": False},
+    ]
+
+
+@pytest.mark.parametrize(
+    "value", ["2026-02-30", "tomorrow", "2026-2-3", "20261001", "2026-13-01", ""]
+)
+def test_ac2_add_with_a_bad_due_is_an_error_and_changes_nothing(
+    tasks_file, tmp_path, capsys, value
+):
+    assert run(tasks_file, "add", "X", "--due", value) == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == f"error: invalid due date: {value}\n"
+    assert store.load(tasks_file) == TASKS
+
+    missing = tmp_path / "new.json"
+    assert run(missing, "add", "X", "--due", value) == 2
+    assert not missing.exists()
+
+
+def test_ac2_add_accepts_a_leap_day(tmp_path):
+    path = tmp_path / "t.json"
+
+    assert run(path, "add", "X", "--due", "2028-02-29") == 0
+    assert store.load(path)[0].get("due") == "2028-02-29"
+
+
+def test_ac3_list_shows_the_due_date_of_dated_tasks(tmp_path, capsys):
+    path = tmp_path / "tasks.json"
+    store.save(path, DATED)
+
+    assert run(path, "list") == 0
+    assert capsys.readouterr().out == "[ ] 1 Buy milk\n[ ] 2 Pay rent (due 2026-10-01)\n"
+
+    assert run(path, "list", "--all") == 0
+    assert capsys.readouterr().out == (
+        "[ ] 1 Buy milk\n[ ] 2 Pay rent (due 2026-10-01)\n"
+        "[x] 3 Call Sam (due 2026-01-05)\n"
+    )
+
+
+def test_ac4_list_overdue_shows_open_past_due_tasks_ordered(
+    tmp_path, monkeypatch, capsys
+):
+    path = tmp_path / "tasks.json"
+    store.save(path, OVERDUE)
+    monkeypatch.setenv("TASKLIST_TODAY", "2026-10-01")
+    expected = (
+        "[ ] 2 b (due 2026-09-01)\n[ ] 7 g (due 2026-09-01)\n[ ] 1 a (due 2026-09-30)\n"
+    )
+
+    assert run(path, "list", "--overdue") == 0
+    assert capsys.readouterr().out == expected
+    assert run(path, "list", "--overdue", "--all") == 0
+    assert capsys.readouterr().out == expected
+
+    monkeypatch.setenv("TASKLIST_TODAY", "2026-01-01")
+    assert run(path, "list", "--overdue") == 0
+    assert capsys.readouterr().out == ""
+
+
+def test_ac5_today_comes_from_the_environment_and_a_bad_value_is_an_error(
+    tmp_path, monkeypatch, capsys
+):
+    path = tmp_path / "tasks.json"
+    store.save(
+        path, [{"id": 1, "title": "Pay rent", "done": False, "due": "2026-10-01"}]
+    )
+
+    monkeypatch.setenv("TASKLIST_TODAY", "2026-09-30")
+    assert run(path, "list", "--overdue") == 0
+    assert capsys.readouterr().out == ""
+    monkeypatch.setenv("TASKLIST_TODAY", "2026-10-02")
+    assert run(path, "list", "--overdue") == 0
+    assert capsys.readouterr().out == "[ ] 1 Pay rent (due 2026-10-01)\n"
+
+    monkeypatch.setenv("TASKLIST_TODAY", "notadate")
+    assert run(path, "list", "--overdue") == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == "error: invalid TASKLIST_TODAY: notadate\n"
+
+    assert run(path, "list") == 0  # plain list never reads it
+
+
+def test_ac6_a_010_file_keeps_working_and_done_adds_no_due_key(
+    tasks_file, monkeypatch, capsys
+):
+    monkeypatch.setenv("TASKLIST_TODAY", "2026-10-01")
+
+    assert run(tasks_file, "list") == 0
+    assert capsys.readouterr().out == "[ ] 1 Buy milk\n"
+    assert run(tasks_file, "list", "--all") == 0
+    assert capsys.readouterr().out == "[ ] 1 Buy milk\n[x] 2 Call Sam\n"
+    assert run(tasks_file, "list", "--overdue") == 0
+    assert capsys.readouterr().out == ""
+
+    assert run(tasks_file, "done", "1") == 0
+    assert store.load(tasks_file) == [{**TASKS[0], "done": True}, TASKS[1]]

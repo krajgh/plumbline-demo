@@ -18,6 +18,10 @@ $ python -m tasklist list --all
 [x] 2 Call Sam
 ```
 
+A task can have a due date: `add "Pay rent" --due 2026-10-01` (YYYY-MM-DD only).
+`list` shows it as `(due 2026-10-01)`. `list --overdue` shows open tasks due before
+today, earliest first; "today" is `TASKLIST_TODAY` (YYYY-MM-DD) if set, else the clock.
+
 Tasks are kept in a JSON file. Its path is `--file PATH` if given (put it before
 the command), else the `TASKLIST_FILE` environment variable, else `./tasks.json`.
 
