@@ -72,6 +72,32 @@ def cmd_done(args: argparse.Namespace, path: Path) -> int:
     return 0
 
 
+def cmd_edit(args: argparse.Namespace, path: Path) -> int:
+    """Change the title, due date or priority of a task."""
+    tasks = store.load(path)
+    try:
+        core.edit_task(tasks, args.id, args.title, args.due, args.no_due, args.priority)
+    except KeyError:
+        return fail(f"no task with id {args.id}")
+    except ValueError as error:
+        return fail(str(error))
+    store.save(path, tasks)
+    print(f"edited {args.id}")
+    return 0
+
+
+def cmd_remove(args: argparse.Namespace, path: Path) -> int:
+    """Delete a task."""
+    tasks = store.load(path)
+    try:
+        core.remove_task(tasks, args.id)
+    except KeyError:
+        return fail(f"no task with id {args.id}")
+    store.save(path, tasks)
+    print(f"removed {args.id}")
+    return 0
+
+
 def bad_tags(tasks: list[core.Task]) -> str | None:
     """Return an error message for the first task whose stored tags are not a list of strings."""
     for task in tasks:
@@ -193,6 +219,18 @@ def build_parser() -> argparse.ArgumentParser:
     done = commands.add_parser("done", help="mark a task as done")
     done.add_argument("id", metavar="ID", type=int, help="id of the task")
     done.set_defaults(handler=cmd_done)
+
+    edit = commands.add_parser("edit", help="change a task's title, due date or priority")
+    edit.add_argument("id", metavar="ID", type=int, help="id of the task")
+    edit.add_argument("--title", metavar="TITLE", help="new title")
+    edit.add_argument("--due", metavar="DATE", help="new due date, YYYY-MM-DD")
+    edit.add_argument("--no-due", action="store_true", help="remove the due date")
+    edit.add_argument("--priority", metavar="LEVEL", help="high, normal or low")
+    edit.set_defaults(handler=cmd_edit)
+
+    remove = commands.add_parser("remove", help="delete a task")
+    remove.add_argument("id", metavar="ID", type=int, help="id of the task")
+    remove.set_defaults(handler=cmd_remove)
 
     show = commands.add_parser("list", help="list open tasks")
     show.add_argument(

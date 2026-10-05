@@ -75,6 +75,56 @@ def _find(tasks: list[Task], task_id: int) -> Task:
     raise KeyError(task_id)
 
 
+def edit_task(
+    tasks: list[Task],
+    task_id: int,
+    title: str | None = None,
+    due: str | None = None,
+    no_due: bool = False,
+    priority: str | None = None,
+) -> Task:
+    """Change the given fields of a task and return it.
+
+    KeyError if no such id. ValueError (message ready to print) for a blank title, a bad date,
+    a bad priority, due with no_due, or nothing to change; all checked before any change.
+    Priority "normal" and no_due delete their keys.
+    """
+    task = _find(tasks, task_id)
+    if title is None and due is None and not no_due and priority is None:
+        raise ValueError("nothing to edit")
+    if due is not None and no_due:
+        raise ValueError("--due and --no-due cannot be used together")
+    if title is not None:
+        title = title.strip()
+        if not title:
+            raise ValueError("title must not be empty")
+    if due is not None:
+        try:
+            parse_date(due)
+        except ValueError:
+            raise ValueError(f"invalid due date: {due}") from None
+    if priority is not None and priority not in PRIORITIES:
+        raise ValueError(f"invalid priority: {priority}")
+    if title is not None:
+        task["title"] = title
+    if due is not None:
+        task["due"] = due
+    if no_due:
+        task.pop("due", None)
+    if priority == "normal":
+        task.pop("priority", None)
+    elif priority is not None:
+        task["priority"] = priority
+    return task
+
+
+def remove_task(tasks: list[Task], task_id: int) -> Task:
+    """Remove the task with task_id and return it. KeyError if no such id."""
+    task = _find(tasks, task_id)
+    tasks.remove(task)
+    return task
+
+
 def add_tag(tasks: list[Task], task_id: int, name: str) -> Task:
     """Add tag name to the task. ValueError if invalid (checked first), KeyError if no such id."""
     if not is_valid_tag(name):
