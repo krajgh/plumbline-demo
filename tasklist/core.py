@@ -12,6 +12,7 @@ class Task(TypedDict):
     title: str
     done: bool
     due: NotRequired[str]  # ISO date, YYYY-MM-DD; absent when the task has none
+    tags: NotRequired[list[str]]  # absent when the task has none
 
 
 def parse_date(text: str) -> datetime.date:
@@ -22,24 +23,70 @@ def parse_date(text: str) -> datetime.date:
     return datetime.date.fromisoformat(text)
 
 
-def add_task(tasks: list[Task], title: str, due: str | None = None) -> Task:
+def is_valid_tag(name: str) -> bool:
+    """True if name is one or more of a-z, 0-9 and dash (ASCII only, no newline)."""
+    return isinstance(name, str) and re.fullmatch(r"[a-z0-9-]+", name) is not None
+
+
+def add_task(
+    tasks: list[Task], title: str, due: str | None = None, tags: list[str] | None = None
+) -> Task:
     """Append a new open task to tasks and return it.
 
     The new id is one more than the highest id in use, or 1 for an empty list.
     Surrounding whitespace is stripped from title. A blank title raises ValueError.
     due, if given, must be a YYYY-MM-DD date, else ValueError.
+    tags, if given, must all be valid tags, else ValueError; duplicates are dropped.
     """
     title = title.strip()
     if not title:
         raise ValueError("title must not be empty")
     if due is not None:
         parse_date(due)
+    for name in tags or []:
+        if not is_valid_tag(name):
+            raise ValueError(f"invalid tag: {name}")
     next_id = max((task["id"] for task in tasks), default=0) + 1
     task: Task = {"id": next_id, "title": title, "done": False}
     if due is not None:
         task["due"] = due
+    if tags:
+        task["tags"] = list(dict.fromkeys(tags))
     tasks.append(task)
     return task
+
+
+def _find(tasks: list[Task], task_id: int) -> Task:
+    for task in tasks:
+        if task["id"] == task_id:
+            return task
+    raise KeyError(task_id)
+
+
+def add_tag(tasks: list[Task], task_id: int, name: str) -> Task:
+    """Add tag name to the task. ValueError if invalid (checked first), KeyError if no such id."""
+    if not is_valid_tag(name):
+        raise ValueError(f"invalid tag: {name}")
+    task = _find(tasks, task_id)
+    if name not in task.get("tags", []):
+        task.setdefault("tags", []).append(name)
+    return task
+
+
+def remove_tag(tasks: list[Task], task_id: int, name: str) -> Task:
+    """Remove tag name from the task. KeyError if no such id, ValueError if it lacks the tag."""
+    task = _find(tasks, task_id)
+    if name not in task.get("tags", []):
+        raise ValueError(f"task {task_id} does not have tag {name}")
+    task["tags"].remove(name)
+    if not task["tags"]:
+        del task["tags"]
+    return task
+
+
+def tagged_tasks(tasks: list[Task], name: str) -> list[Task]:
+    """Return the tasks carrying tag name, in the given order."""
+    return [task for task in tasks if name in task.get("tags", [])]
 
 
 def complete_task(tasks: list[Task], task_id: int) -> Task:

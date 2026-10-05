@@ -18,6 +18,8 @@ def format_task(task: core.Task) -> str:
     line = f"[{mark}] {task['id']} {task['title']}"
     if task.get("due"):
         line += f" (due {task['due']})"
+    if task.get("tags"):
+        line += " " + " ".join(f"#{name}" for name in task["tags"])
     return line
 
 
@@ -40,9 +42,12 @@ def fail(message: str) -> int:
 
 def cmd_add(args: argparse.Namespace, path: Path) -> int:
     """Add a task and print its id."""
+    for name in args.tags or []:
+        if not core.is_valid_tag(name):
+            return fail(f"invalid tag: {name}")
     tasks = store.load(path)
     try:
-        task = core.add_task(tasks, args.title, args.due)
+        task = core.add_task(tasks, args.title, args.due, args.tags)
     except ValueError as error:
         if args.title.strip():  # the title is fine, so the due date was bad
             return fail(f"invalid due date: {args.due}")
@@ -64,6 +69,49 @@ def cmd_done(args: argparse.Namespace, path: Path) -> int:
     return 0
 
 
+def bad_tags(tasks: list[core.Task]) -> str | None:
+    """Return an error message for the first task whose stored tags are not a list of strings."""
+    for task in tasks:
+        tags = task.get("tags", [])
+        if not isinstance(tags, list) or not all(isinstance(t, str) for t in tags):
+            return f"task {task['id']} has invalid tags: {tags!r}"
+    return None
+
+
+def cmd_tag(args: argparse.Namespace, path: Path) -> int:
+    """Add a tag to a task."""
+    tasks = store.load(path)
+    message = core.is_valid_tag(args.name) and bad_tags([t for t in tasks if t["id"] == args.id])
+    if message:
+        return fail(message)
+    try:
+        core.add_tag(tasks, args.id, args.name)
+    except ValueError:
+        return fail(f"invalid tag: {args.name}")
+    except KeyError:
+        return fail(f"no task with id {args.id}")
+    store.save(path, tasks)
+    print(f"tagged {args.id}")
+    return 0
+
+
+def cmd_untag(args: argparse.Namespace, path: Path) -> int:
+    """Remove a tag from a task."""
+    tasks = store.load(path)
+    message = bad_tags([t for t in tasks if t["id"] == args.id])
+    if message:
+        return fail(message)
+    try:
+        core.remove_tag(tasks, args.id, args.name)
+    except ValueError as error:
+        return fail(str(error))
+    except KeyError:
+        return fail(f"no task with id {args.id}")
+    store.save(path, tasks)
+    print(f"untagged {args.id}")
+    return 0
+
+
 def cmd_list(args: argparse.Namespace, path: Path) -> int:
     """Print the open tasks, every task with --all, or the overdue ones, one per line."""
     tasks = store.load(path)
@@ -78,9 +126,17 @@ def cmd_list(args: argparse.Namespace, path: Path) -> int:
                     core.parse_date(task["due"])
                 except ValueError:
                     return fail(f"task {task['id']} has an invalid due date: {task['due']}")
+        message = bad_tags([t for t in tasks if not t["done"]])  # every open task, like due dates
+        if message:
+            return fail(message)
         shown = core.overdue_tasks(tasks, now)
     else:
         shown = core.visible_tasks(tasks, show_all=args.show_all)
+    message = bad_tags(shown)
+    if message:
+        return fail(message)
+    if args.tag is not None:
+        shown = core.tagged_tasks(shown, args.tag)
     for task in shown:
         print(format_task(task))
     return 0
@@ -99,7 +155,19 @@ def build_parser() -> argparse.ArgumentParser:
     add = commands.add_parser("add", help="add a task")
     add.add_argument("title", metavar="TITLE", help="what needs doing")
     add.add_argument("--due", metavar="DATE", help="due date, YYYY-MM-DD")
+    add.add_argument(
+        "--tag", dest="tags", metavar="NAME", action="append", help="tag (repeatable)"
+    )
     add.set_defaults(handler=cmd_add)
+
+    for name, handler, text in (
+        ("tag", cmd_tag, "add a tag to a task"),
+        ("untag", cmd_untag, "remove a tag from a task"),
+    ):
+        sub = commands.add_parser(name, help=text)
+        sub.add_argument("id", metavar="ID", type=int, help="id of the task")
+        sub.add_argument("name", metavar="NAME", help="tag name")
+        sub.set_defaults(handler=handler)
 
     done = commands.add_parser("done", help="mark a task as done")
     done.add_argument("id", metavar="ID", type=int, help="id of the task")
@@ -114,6 +182,7 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help=f"only open tasks due before today (${TODAY_ENV_VAR}, else the clock)",
     )
+    show.add_argument("--tag", metavar="NAME", help="only tasks with this tag")
     show.set_defaults(handler=cmd_list)
 
     return parser
@@ -124,6 +193,7 @@ def main(argv: list[str] | None = None) -> int:
 
     argv defaults to sys.argv[1:].
     """
+    argv = sys.argv[1:] if argv is None else list(argv)
     args = build_parser().parse_args(argv)
     path = store.resolve_path(args.file)
     return args.handler(args, path)
