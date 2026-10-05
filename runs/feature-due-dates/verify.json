@@ -1,0 +1,25 @@
+{
+  "commands": [
+    {
+      "name": "test",
+      "command": "uv run --no-project --with pytest pytest -q",
+      "exit_code": 0,
+      "summary": "38 passed"
+    }
+  ],
+  "tests": {
+    "passed": 38,
+    "failed": 0,
+    "skipped": 0
+  },
+  "failing_acs": [],
+  "checks": {
+    "lint": null,
+    "secrets": true,
+    "symlinks": true,
+    "abs_paths": true,
+    "graft_fresh": null
+  },
+  "green": true,
+  "diff_sha256": "2b81f01556b2a52a206d52fa44550f2f15f192c472e44a01f8049ba98bb61d6a"
+}

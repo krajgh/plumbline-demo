@@ -1,0 +1,17 @@
+{
+  "tests": [
+    {
+      "id": "T-1",
+      "file": "tests/test_cli.py",
+      "name": "test_ac1_overdue_with_a_malformed_stored_due_names_the_task",
+      "ac_ids": ["AC-1"],
+      "scenario": "Open task 1 with due \"soon\"; list --overdue with TASKLIST_TODAY unset and with 2026-10-01 (parametrized): exit 2, empty stdout, one stderr line with the id and \"soon\", no TASKLIST_TODAY, no exception escaping main(). The invalid-TASKLIST_TODAY guard case is covered by the existing test_ac5_today_comes_from_the_environment_and_a_bad_value_is_an_error."
+    }
+  ],
+  "files_written": ["tests/test_cli.py"],
+  "stub_check": {
+    "ran": true,
+    "all_failed_on_assertions": true,
+    "detail": "2 failed, 38 passed: both parametrized cases of the new test fail on assertions against today's code; the invalid-TASKLIST_TODAY guard is covered by existing test_ac5, which passes."
+  }
+}

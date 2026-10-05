@@ -1,0 +1,18 @@
+{
+  "lens": "correctness",
+  "findings": [
+    {
+      "id": "correctness-1",
+      "lens": "correctness",
+      "file": "tasklist/cli.py",
+      "line": 78,
+      "claim": "The due-date check only catches ValueError, so a stored due that is not a string (null, number) makes parse_date raise TypeError and crash with a traceback.",
+      "failure_scenario": "Task file holds an open task {\"id\": 1, \"title\": \"a\", \"done\": false, \"due\": null} (or \"due\": 20261001); `tasklist list --overdue` reaches re.fullmatch on a non-string, raises TypeError, and exits with a traceback instead of exit 2 plus one stderr line naming the task.",
+      "rule": "AC-1 (malformed stored due date: exit 2, one stderr line, no traceback)",
+      "evidence": "                except ValueError:\n                    return fail(f\"task {task['id']} has an invalid due date: {task['due']}\")",
+      "outside_code": null,
+      "severity": "MINOR"
+    }
+  ],
+  "diff_sha256": "8def51394535a59742bb675884c1272a6b30ecb4589dfe2c3ee4a0899a03a3be"
+}

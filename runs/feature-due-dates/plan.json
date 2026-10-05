@@ -1,0 +1,44 @@
+{
+  "goal": "Let tasks carry an optional due date: add --due on add, show it in list, add list --overdue, and keep 0.1.0 task files working.",
+  "non_goals": [
+    "No command to edit or clear a due date after add.",
+    "No date formats other than YYYY-MM-DD, no relative dates, no time of day or time zones.",
+    "No file migration: old files are never rewritten just to add a field.",
+    "No change to done, to ids, or to the default list ordering."
+  ],
+  "acceptance_criteria": [
+    {"id": "AC-1", "statement": "`add TITLE --due YYYY-MM-DD` with a valid calendar date stores the task with a string field \"due\" equal to the given date (e.g. {\"id\":3,\"title\":\"Pay rent\",\"done\":false,\"due\":\"2026-10-01\"}), prints `added 3`, exits 0. `add` without --due stores no \"due\" key, exactly as today.", "verification": "test_cli: run add with and without --due, then store.load the file and compare the dicts; test_core: add_task with due."},
+    {"id": "AC-2", "statement": "A --due value that is not a real date in strict YYYY-MM-DD form (4-digit year, 2-digit month, 2-digit day, e.g. `2026-02-30`, `tomorrow`, `2026-2-3`, `20261001`, empty string) makes `add` exit 2, print exactly one line on stderr `error: invalid due date: <value>` (value verbatim), print nothing on stdout, and leave the task file unchanged (not created if it did not exist). A valid leap day such as 2028-02-29 is accepted.", "verification": "test_cli: parametrised over the bad values, assert exit 2, stderr equals the line, stdout empty, file content unchanged / absent; one test for 2028-02-29 accepted."},
+    {"id": "AC-3", "statement": "`list` prints a task that has a due date as `[ ] 3 Pay rent (due 2026-10-01)` (mark, id, title, then ` (due DATE)`); a finished task shows it too, e.g. `[x] 3 Pay rent (due 2026-10-01)`. Tasks without a due date print exactly as before, with no suffix.", "verification": "test_cli: list on a file with dated and undated tasks, including --all with a done dated task; compare stdout exactly."},
+    {"id": "AC-4", "statement": "`list --overdue` prints only tasks that are open (not done) and have a due date strictly before today, in the same line format as AC-3, ordered by due date ascending and, for equal due dates, by id ascending. A task due today, due later, undated or done is not shown. If none match, nothing is printed and exit is 0. `--overdue` always shows open tasks only, so combining it with --all changes nothing.", "verification": "test_cli/test_core: file with tasks due before, on and after today, undated, and done-and-past-due, with two tasks sharing a due date and the lower id listed later in the file; compare stdout exactly."},
+    {"id": "AC-5", "statement": "\"Today\" is the date in environment variable TASKLIST_TODAY (YYYY-MM-DD) when it is set and non-empty, otherwise datetime.date.today(). The CLI reads it only for `list --overdue`. If TASKLIST_TODAY is set but not a strict valid YYYY-MM-DD date, `list --overdue` exits 2 with one stderr line `error: invalid TASKLIST_TODAY: <value>` and prints nothing on stdout. core.overdue_tasks takes today as an explicit datetime.date argument and never reads the clock or environment.", "verification": "test_cli: monkeypatch.setenv TASKLIST_TODAY to fixed dates and check --overdue output changes accordingly; a bad value gives exit 2 and the error line; test_core: call overdue_tasks with explicit dates."},
+    {"id": "AC-6", "statement": "A task file written by 0.1.0 (tasks with only id, title, done; no \"due\" key) loads, and `list`, `list --all`, `list --overdue` (shows nothing for it) and `done ID` work as before; `done` saves the file with no \"due\" key added to any task.", "verification": "test_cli: the existing fixture-style file of undated tasks; run list, list --all, list --overdue, done, then compare store.load with the expected undated dicts. Existing tests continue to pass unchanged."}
+  ],
+  "interfaces": [
+    {"name": "parse_date", "file": "tasklist/core.py", "signature": "def parse_date(text: str) -> datetime.date  # strict YYYY-MM-DD: regex ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ then date.fromisoformat; raises ValueError otherwise"},
+    {"name": "Task", "file": "tasklist/core.py", "signature": "class Task(TypedDict) with optional key: due: NotRequired[str]  # ISO date string"},
+    {"name": "add_task", "file": "tasklist/core.py", "signature": "def add_task(tasks: list[Task], title: str, due: str | None = None) -> Task  # due checked with parse_date, ValueError if bad; \"due\" key set only when due is not None"},
+    {"name": "overdue_tasks", "file": "tasklist/core.py", "signature": "def overdue_tasks(tasks: list[Task], today: datetime.date) -> list[Task]  # open, has due, parse_date(due) < today; sorted by (due, id)"},
+    {"name": "format_task", "file": "tasklist/cli.py", "signature": "def format_task(task: core.Task) -> str  # appends f\" (due {task['due']})\" when task.get('due')"},
+    {"name": "today", "file": "tasklist/cli.py", "signature": "def today() -> datetime.date  # TASKLIST_TODAY if set and non-empty (ValueError if invalid), else date.today()"},
+    {"name": "add --due", "file": "tasklist/cli.py", "signature": "tasklist add TITLE [--due YYYY-MM-DD]  # cmd_add passes the raw string to core.add_task; a bad due gives fail(f\"invalid due date: {args.due}\"); the blank-title message is unchanged"},
+    {"name": "list --overdue", "file": "tasklist/cli.py", "signature": "tasklist list [--all] [--overdue]  # dest overdue, store_true"}
+  ],
+  "test_plan": [
+    {"ac": "AC-1", "scenario": "Empty file; run add 'Pay rent' --due 2026-10-01: exit 0, stdout 'added 1\\n', stored dict has due '2026-10-01'. Then add 'Buy milk' with no --due: stored dict has exactly keys id, title, done."},
+    {"ac": "AC-2", "scenario": "For each of 2026-02-30, tomorrow, 2026-2-3, 20261001, 2026-13-01, empty string: add X --due VALUE on a file holding TASKS gives exit 2, stderr exactly 'error: invalid due date: VALUE\\n', stdout '', file equals TASKS. Also with no file existing, the file is still absent afterwards. add X --due 2028-02-29 exits 0."},
+    {"ac": "AC-3", "scenario": "File with {1 Buy milk open, no due}, {2 Pay rent open due 2026-10-01}, {3 Call Sam done due 2026-01-05}: list prints '[ ] 1 Buy milk\\n[ ] 2 Pay rent (due 2026-10-01)\\n'; list --all also prints '[x] 3 Call Sam (due 2026-01-05)\\n' last."},
+    {"ac": "AC-4", "scenario": "TASKLIST_TODAY=2026-10-01. Tasks: 1 due 2026-09-30 open, 2 due 2026-09-01 open, 3 due 2026-10-01 open (today, excluded), 4 due 2026-12-01 open, 5 no due, 6 due 2026-08-01 done (excluded), 7 due 2026-09-01 open. list --overdue prints, in order: 2, 7 (tie on 2026-09-01 broken by id), 1. Same with --all gives the same output. With TASKLIST_TODAY=2026-01-01 prints nothing and exits 0. core.overdue_tasks called directly with date(2026,10,1) returns the same tasks."},
+    {"ac": "AC-5", "scenario": "TASKLIST_TODAY=2026-09-30 versus 2026-10-02 on the same file gives different --overdue output for a task due 2026-10-01. TASKLIST_TODAY=notadate: list --overdue exits 2, stderr 'error: invalid TASKLIST_TODAY: notadate\\n', stdout ''. Plain `list` with TASKLIST_TODAY=notadate still succeeds."},
+    {"ac": "AC-6", "scenario": "Using the existing TASKS fixture (no due keys): list, list --all, list --overdue (empty output) behave as existing tests expect; done 1 then store.load equals TASKS with task 1 done and no 'due' key anywhere."}
+  ],
+  "risks": [
+    "Choice: 'today' comes from env var TASKLIST_TODAY (no CLI flag), consistent with the existing TASKLIST_FILE pattern; core.overdue_tasks takes it as a parameter so unit tests need no env.",
+    "Choice: overdue tie-break is id ascending; --overdue with --all is accepted and ignored (open only), since the request says 'only open tasks'.",
+    "Choice: due is stored as the ISO string under an optional key \"due\", omitted when absent; old files need no migration and undated saves are unchanged.",
+    "date.fromisoformat accepts more forms than YYYY-MM-DD on Python 3.11+ (e.g. 20261001), so the strict regex check is required; use [0-9] not \\d, which matches non-ASCII digits.",
+    "Hand-edited files with a malformed stored \"due\" would make --overdue raise; not handled (store.load does no validation today).",
+    "A blank title together with a bad due reports the title error first, since the existing title check runs first."
+  ],
+  "split_proposal": null
+}

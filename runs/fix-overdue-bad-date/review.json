@@ -1,0 +1,156 @@
+{
+  "target": "diff",
+  "round": 1,
+  "lenses": [
+    "correctness",
+    "tests"
+  ],
+  "findings": [
+    {
+      "id": "correctness-1",
+      "lens": "correctness",
+      "file": "tasklist/cli.py",
+      "line": 78,
+      "claim": "The due-date check only catches ValueError, so a stored due that is not a string (null, number) makes parse_date raise TypeError and crash with a traceback.",
+      "failure_scenario": "Task file holds an open task {\"id\": 1, \"title\": \"a\", \"done\": false, \"due\": null} (or \"due\": 20261001); `tasklist list --overdue` reaches re.fullmatch on a non-string, raises TypeError, and exits with a traceback instead of exit 2 plus one stderr line naming the task.",
+      "rule": "AC-1 (malformed stored due date: exit 2, one stderr line, no traceback)",
+      "evidence": "                except ValueError:\n                    return fail(f\"task {task['id']} has an invalid due date: {task['due']}\")",
+      "outside_code": null,
+      "severity": "MINOR",
+      "evidence_unverified": false
+    },
+    {
+      "id": "tests-1",
+      "lens": "tests",
+      "file": "tests/test_cli.py",
+      "line": 261,
+      "claim": "The id assertion is a bare substring check for \"1\", so it would pass with the wrong id or a message that merely contains the digit 1.",
+      "failure_scenario": "The code reports the task's position, a count, or the date part of some other value containing '1' instead of task['id']; the test still passes because the only task has id 1 and the check is `\"1\" in line`.",
+      "rule": "AC-1 (the line contains the task's id and its bad due value)",
+      "evidence": "assert \"1\" in lines[0] and \"soon\" in lines[0]",
+      "outside_code": null,
+      "severity": "MINOR",
+      "evidence_unverified": false
+    },
+    {
+      "id": "tests-2",
+      "lens": "tests",
+      "file": "tests/test_cli.py",
+      "line": 232,
+      "claim": "No test covers the open-task qualifier: a done task with a malformed due, or a mix of tasks, is never exercised, so removing the `not task[\"done\"]` guard or the reporting of the correct task among several would go unnoticed.",
+      "failure_scenario": "A change makes list --overdue fail on a done task with due 'soon' (or report the first task rather than the bad one); the only fixture is a single open task with id 1, so every test still passes.",
+      "rule": "AC-1 (\"an open task ... has a malformed stored due date\")",
+      "evidence": "store.save(path, [{\"id\": 1, \"title\": \"a\", \"done\": False, \"due\": \"soon\"}])",
+      "outside_code": null,
+      "severity": "MINOR",
+      "evidence_unverified": false
+    }
+  ],
+  "defenses": [
+    {
+      "finding_id": "correctness-1",
+      "defender": "defender-1",
+      "verdict": "conceded",
+      "quote": "except ValueError:",
+      "reason": "The code only catches ValueError from parse_date(), but re.fullmatch() in parse_date() will raise TypeError if task[\"due\"] is not a string (e.g., null or number). Since TypeError is not caught, a non-string stored due date will crash with a traceback instead of printing a clean error message as required by AC-1."
+    },
+    {
+      "finding_id": "correctness-1",
+      "defender": "defender-2",
+      "verdict": "conceded",
+      "quote": "except ValueError:",
+      "reason": "The code only catches ValueError from parse_date, but parse_date will raise TypeError if task['due'] is not a string (e.g., null or a number) because re.fullmatch requires a string argument. This would cause an unhandled TypeError instead of the clean error message required by AC-1."
+    },
+    {
+      "finding_id": "correctness-1",
+      "defender": "defender-3",
+      "verdict": "conceded",
+      "quote": "                except ValueError:\n                    return fail(f\"task {task['id']} has an invalid due date: {task['due']}\")",
+      "reason": "The exception handler on line 79 of the added code only catches ValueError. If task[\"due\"] is not a string (e.g., null or an integer), re.fullmatch() in parse_date will raise TypeError on line 20 of core.py, which is not caught, causing an unhandled exception and traceback instead of the expected error handling."
+    },
+    {
+      "finding_id": "tests-1",
+      "defender": "defender-1",
+      "verdict": "conceded",
+      "quote": "assert \"1\" in lines[0] and \"soon\" in lines[0]",
+      "reason": "The assertion is a bare substring check that could pass even if the task id is not reported correctly, as long as the character \"1\" and the string \"soon\" both appear somewhere in the error line. A more robust assertion would check for the full task id in a structured way to ensure the correct task is identified."
+    },
+    {
+      "finding_id": "tests-1",
+      "defender": "defender-2",
+      "verdict": "conceded",
+      "quote": "assert \"1\" in lines[0] and \"soon\" in lines[0]",
+      "reason": "The assertion uses bare substring checks rather than exact format verification. The error message format could change while still containing '1' and 'soon' as substrings, making the test insufficient to catch subtle bugs in how the task id or due value is reported."
+    },
+    {
+      "finding_id": "tests-1",
+      "defender": "defender-3",
+      "verdict": "conceded",
+      "quote": "    assert \"1\" in lines[0] and \"soon\" in lines[0]",
+      "reason": "The assertion on line 261 is a bare substring check that would pass with any message containing \"1\" and \"soon\", such as \"Position 1 has error: soon\" or other formats that don't specifically verify the task id was correctly reported. The test does not enforce the exact format of the error message."
+    },
+    {
+      "finding_id": "tests-2",
+      "defender": "defender-1",
+      "verdict": "conceded",
+      "quote": "store.save(path, [{\"id\": 1, \"title\": \"a\", \"done\": False, \"due\": \"soon\"}])",
+      "reason": "The test fixture only covers a single open task with a malformed due date. The code being tested includes the condition 'if not task[\"done\"]', but the test never verifies that done tasks with malformed dues are properly skipped, nor does it test files with multiple tasks to ensure the correct one is reported when mixing open and done tasks."
+    },
+    {
+      "finding_id": "tests-2",
+      "defender": "defender-2",
+      "verdict": "conceded",
+      "quote": "store.save(path, [{'id': 1, 'title': 'a', 'done': False, 'due': 'soon'}])",
+      "reason": "The test fixture contains only an open task (done: False). Since the code checks 'if not task[\"done\"] and \"due\" in task:', removing the 'not task[\"done\"]' guard would go undetected because the fixture never exercises the behavior with done tasks."
+    },
+    {
+      "finding_id": "tests-2",
+      "defender": "defender-3",
+      "verdict": "conceded",
+      "quote": "    store.save(path, [{\"id\": 1, \"title\": \"a\", \"done\": False, \"due\": \"soon\"}])",
+      "reason": "The test fixture on line 237 only creates a single open task with done: False. There is no test case that exercises the scenario of a done task with a malformed due date, or a mix of open and done tasks, so the guard `not task[\"done\"]` on line 76 of cli.py is never tested with done tasks, and removing that guard would not be caught by this test."
+    }
+  ],
+  "survivors": [
+    "correctness-1",
+    "tests-1",
+    "tests-2"
+  ],
+  "gaps": [
+    {
+      "id": "G-1",
+      "kind": "edge_case",
+      "detail": "A well-formed but impossible stored due such as \"2026-02-30\" or \"2026-13-01\" passes the regex in core.parse_date and fails in date.fromisoformat with ValueError. The cli.py loop catches it, but no test uses such a value; add a parametrized case (in tests/test_cli.py, next to the \"soon\" test) with due \"2026-02-30\", and one with an empty string \"\" (falsy, so format_task hides it, but overdue_tasks still parses it) expecting exit 2 and one stderr line naming the id and value.",
+      "ac": "AC-1"
+    },
+    {
+      "id": "G-2",
+      "kind": "missing_test",
+      "detail": "No test checks that a malformed due on a done task is ignored by list --overdue (the `not task[\"done\"]` guard in cmd_list), nor a mixed file (valid overdue open task, done task with bad due, open task id 2 with bad due) where the error must name id 2 and not id 1 and print nothing on stdout.",
+      "ac": "AC-1"
+    },
+    {
+      "id": "G-3",
+      "kind": "edge_case",
+      "detail": "A stored due that is not a string (null, number) makes core.parse_date raise TypeError in re.fullmatch; cmd_list in tasklist/cli.py catches only ValueError, so this crashes with a traceback. Catch TypeError too (or check isinstance str) and add a test with due null and due 20261001 expecting exit 2 and one stderr line naming the id.",
+      "ac": "AC-1"
+    },
+    {
+      "id": "G-4",
+      "kind": "edge_case",
+      "detail": "With several malformed open tasks, cmd_list reports whichever comes first in file order, not lowest id, and never more than one. AC-1 requires exactly one stderr line, but no test pins which task is named; add a test with two bad tasks (file order differing from id order) asserting a single line and the chosen task. Also no test covers TASKLIST_TODAY=bad together with a malformed stored due (the spec's non-goal says the TASKLIST_TODAY error still wins; current code does so because today() runs first, but it is unasserted).",
+      "ac": "AC-1"
+    }
+  ],
+  "blockers_surviving": 0,
+  "routes": {
+    "builder": [
+      "correctness-1"
+    ],
+    "test-writer": [
+      "tests-1",
+      "tests-2"
+    ]
+  },
+  "diff_sha256": "8def51394535a59742bb675884c1272a6b30ecb4589dfe2c3ee4a0899a03a3be"
+}

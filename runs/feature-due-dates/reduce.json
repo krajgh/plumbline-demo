@@ -1,0 +1,81 @@
+{
+  "commit": "109e295de6349dc724ba16855d50f9013a80c4c0",
+  "run_id": "ccffe51-20260930T055131Z",
+  "row": "code.M",
+  "stages": [
+    {
+      "id": "intake",
+      "record": ".plumbline/runs/ccffe51-20260930T055131Z/intake.json",
+      "gate": null,
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "plan",
+      "record": ".plumbline/runs/ccffe51-20260930T055131Z/plan.json",
+      "gate": "spec_complete",
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "tests",
+      "record": ".plumbline/runs/ccffe51-20260930T055131Z/tests.json",
+      "gate": "tests_fail_on_stub",
+      "passed": true,
+      "rounds": 3
+    },
+    {
+      "id": "test-review",
+      "record": ".plumbline/runs/ccffe51-20260930T055131Z/test-review.json",
+      "gate": "no_surviving_blockers",
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "build",
+      "record": ".plumbline/runs/ccffe51-20260930T055131Z/build.json",
+      "gate": null,
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "verify",
+      "record": ".plumbline/runs/ccffe51-20260930T055131Z/verify.json",
+      "gate": "verify_green",
+      "passed": true,
+      "rounds": 2
+    },
+    {
+      "id": "review",
+      "record": ".plumbline/runs/ccffe51-20260930T055131Z/review.json",
+      "gate": "no_surviving_blockers",
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "reduce",
+      "record": ".plumbline/runs/ccffe51-20260930T055131Z/reduce.json",
+      "gate": "all_gates_passed",
+      "passed": true,
+      "rounds": 1
+    }
+  ],
+  "tokens": {
+    "by_model": {
+      "claude-haiku-4-5-20251001": {
+        "output": 14233,
+        "fresh_input": 126665,
+        "cache_read": 1187289
+      },
+      "claude-sonnet-5-5": {
+        "output": 28126,
+        "fresh_input": 289012,
+        "cache_read": 1544686
+      }
+    }
+  },
+  "verdict": "pass",
+  "notes": [
+    "declared row code.M, measured row code.M"
+  ]
+}

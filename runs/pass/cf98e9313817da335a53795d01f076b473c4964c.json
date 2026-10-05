@@ -1,0 +1,79 @@
+{
+  "commit": "cf98e9313817da335a53795d01f076b473c4964c",
+  "run_id": "109e295-20260930T092436Z",
+  "row": "code.S",
+  "stages": [
+    {
+      "id": "intake",
+      "record": ".plumbline/runs/109e295-20260930T092436Z/intake.json",
+      "gate": null,
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "plan",
+      "record": ".plumbline/runs/109e295-20260930T092436Z/plan.json",
+      "gate": "spec_complete",
+      "passed": true,
+      "rounds": 0
+    },
+    {
+      "id": "tests",
+      "record": ".plumbline/runs/109e295-20260930T092436Z/tests.json",
+      "gate": "reproduces_on_head",
+      "passed": true,
+      "rounds": 2
+    },
+    {
+      "id": "build",
+      "record": ".plumbline/runs/109e295-20260930T092436Z/build.json",
+      "gate": null,
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "verify",
+      "record": ".plumbline/runs/109e295-20260930T092436Z/verify.json",
+      "gate": "verify_green",
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "review",
+      "record": ".plumbline/runs/109e295-20260930T092436Z/review.json",
+      "gate": "no_surviving_blockers",
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "reduce",
+      "record": ".plumbline/runs/109e295-20260930T092436Z/reduce.json",
+      "gate": "all_gates_passed",
+      "passed": true,
+      "rounds": 1
+    }
+  ],
+  "tokens": {
+    "by_model": {
+      "claude-haiku-4-5-20251001": {
+        "output": 14215,
+        "fresh_input": 78957,
+        "cache_read": 751442,
+        "output_lower_bound": 24
+      },
+      "claude-sonnet-5-5": {
+        "output": 3315,
+        "fresh_input": 78084,
+        "cache_read": 396830,
+        "output_lower_bound": 21
+      }
+    }
+  },
+  "verdict": "pass",
+  "notes": [
+    "declared row code.S, measured row code.S",
+    "the output tokens of claude-haiku-4-5-20251001 are a lower bound: 24 messages had no final usage entry, only the snapshot taken as a message starts",
+    "the output tokens of claude-sonnet-5-5 are a lower bound: 21 messages had no final usage entry, only the snapshot taken as a message starts",
+    "intent fix: the record of plan was supplied, not written by an agent"
+  ]
+}

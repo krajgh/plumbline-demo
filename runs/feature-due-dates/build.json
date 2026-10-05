@@ -1,0 +1,10 @@
+{
+  "files_changed": ["tasklist/core.py", "tasklist/cli.py", "README.md"],
+  "summary": "Added optional due date: core.parse_date (strict regex + fromisoformat), Task.due NotRequired, add_task(due=), overdue_tasks(today); cli add --due, list --overdue, format_task suffix, today() reading TASKLIST_TODAY. README documents it. Old files untouched: due key only written when given.",
+  "acs_addressed": ["AC-1", "AC-2", "AC-3", "AC-4", "AC-5", "AC-6"],
+  "assumptions": [
+    "cmd_add tells a bad due from a blank title by checking args.title.strip(), so the title error wins when both are bad.",
+    "In cmd_list, any ValueError from overdue_tasks path is reported as invalid TASKLIST_TODAY; a malformed stored due would be misreported (spec says not handled).",
+    "--overdue takes precedence over --all."
+  ]
+}

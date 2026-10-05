@@ -1,0 +1,33 @@
+{
+  "goal": "`tasklist list --overdue` reports a task whose stored due date is malformed as a clean one-line error naming the task, instead of crashing or blaming TASKLIST_TODAY.",
+  "non_goals": [
+    "Validating due dates on load or in any command other than `list --overdue`.",
+    "Repairing or rewriting malformed due dates in the task file.",
+    "Changing `list` or `list --all`, which print the stored due text as it is.",
+    "Defining precedence when TASKLIST_TODAY and a task's due date are both invalid beyond: an invalid TASKLIST_TODAY is still reported as today."
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "statement": "When an open task in the file has a malformed stored due date (e.g. \"due\": \"soon\"), `tasklist list --overdue` exits with status 2, prints nothing on stdout, and prints exactly one line on stderr that contains the task's id and its bad due value and does not mention TASKLIST_TODAY; no traceback. This holds both with TASKLIST_TODAY unset and with TASKLIST_TODAY set to a valid YYYY-MM-DD date. With TASKLIST_TODAY set and invalid, the existing \"invalid TASKLIST_TODAY\" error is still reported.",
+      "verification": "CLI tests calling tasklist.cli.main against a temporary task file with a task whose due is \"soon\", checking exit status, stdout, and stderr, once with TASKLIST_TODAY unset and once set to a valid date."
+    }
+  ],
+  "interfaces": [
+    {
+      "name": "cmd_list",
+      "file": "tasklist/cli.py",
+      "signature": "cmd_list(args: argparse.Namespace, path: Path) -> int  (unchanged signature; --overdue error handling changes)"
+    }
+  ],
+  "test_plan": [
+    {
+      "ac": "AC-1",
+      "scenario": "Task file holds an open task id 1 with \"due\": \"soon\". Run `list --overdue` with TASKLIST_TODAY unset, and again with TASKLIST_TODAY=2026-10-01: each exits 2, empty stdout, one stderr line containing \"1\" and \"soon\" and not \"TASKLIST_TODAY\". Also with TASKLIST_TODAY=bad the stderr names TASKLIST_TODAY."
+    }
+  ],
+  "risks": [
+    "core.parse_date raises ValueError both for TASKLIST_TODAY and for a task's due date; the fix must tell the two apart rather than catching one ValueError around both."
+  ],
+  "split_proposal": null
+}

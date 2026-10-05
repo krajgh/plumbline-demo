@@ -1,0 +1,21 @@
+{
+  "tests": [
+    {"id": "T-1", "file": "tests/test_cli.py", "name": "test_ac1_add_with_due_stores_the_date_and_without_stores_no_key", "ac_ids": ["AC-1"], "scenario": "add with --due stores due string and prints added 1; add without stores no due key."},
+    {"id": "T-2", "file": "tests/test_core.py", "name": "test_ac1_add_task_with_due_sets_the_due_key_only_when_given", "ac_ids": ["AC-1"], "scenario": "core.add_task with due sets key; without leaves it out."},
+    {"id": "T-3", "file": "tests/test_cli.py", "name": "test_ac2_add_with_a_bad_due_is_an_error_and_changes_nothing", "ac_ids": ["AC-2"], "scenario": "Six bad values: exit 2, exact stderr, empty stdout, file unchanged or still absent."},
+    {"id": "T-4", "file": "tests/test_cli.py", "name": "test_ac2_add_accepts_a_leap_day", "ac_ids": ["AC-2"], "scenario": "add --due 2028-02-29 exits 0."},
+    {"id": "T-5", "file": "tests/test_core.py", "name": "test_ac2_add_task_rejects_a_bad_due_and_leaves_tasks_alone", "ac_ids": ["AC-2"], "scenario": "core.add_task raises ValueError for bad due and does not append."},
+    {"id": "T-6", "file": "tests/test_core.py", "name": "test_ac2_parse_date_is_strict_and_accepts_a_leap_day", "ac_ids": ["AC-2"], "scenario": "parse_date accepts leap day, raises ValueError on loose forms."},
+    {"id": "T-7", "file": "tests/test_cli.py", "name": "test_ac3_list_shows_the_due_date_of_dated_tasks", "ac_ids": ["AC-3"], "scenario": "list and list --all print (due DATE) suffix exactly, none for undated."},
+    {"id": "T-8", "file": "tests/test_cli.py", "name": "test_ac4_list_overdue_shows_open_past_due_tasks_ordered", "ac_ids": ["AC-4"], "scenario": "list --overdue with TASKLIST_TODAY: order 2,7,1; --all same; empty when nothing overdue."},
+    {"id": "T-9", "file": "tests/test_core.py", "name": "test_ac4_ac5_overdue_tasks_filters_and_orders_by_explicit_today", "ac_ids": ["AC-4", "AC-5"], "scenario": "core.overdue_tasks with explicit dates filters, excludes today, orders by (due,id)."},
+    {"id": "T-10", "file": "tests/test_cli.py", "name": "test_ac5_today_comes_from_the_environment_and_a_bad_value_is_an_error", "ac_ids": ["AC-5"], "scenario": "TASKLIST_TODAY changes --overdue output; bad value exits 2 with error line; plain list unaffected."},
+    {"id": "T-11", "file": "tests/test_cli.py", "name": "test_ac6_a_010_file_keeps_working_and_done_adds_no_due_key", "ac_ids": ["AC-6"], "scenario": "Undated 0.1.0 file: list, --all, --overdue (empty), done leaves no due key."}
+  ],
+  "files_written": ["tests/test_cli.py", "tests/test_core.py"],
+  "stub_check": {
+    "ran": true,
+    "all_failed_on_assertions": true,
+    "detail": "uv run --no-project --with pytest pytest -q -o pythonpath=tests/_stubs: 21 failed all on assertions, 17 existing passed; the plain command still imports the real tasklist (21 failed there too, on the missing feature); stubs removed after the build."
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "defender": "defender-3",
+  "defenses": [
+    {
+      "finding_id": "correctness-1",
+      "defender": "defender-3",
+      "verdict": "conceded",
+      "quote": "return fail(f\"invalid {TODAY_ENV_VAR}: {os.environ[TODAY_ENV_VAR]}\")",
+      "reason": "The code unconditionally accesses os.environ[TODAY_ENV_VAR] without first checking if TASKLIST_TODAY is set. When a stored task has a malformed due date and TASKLIST_TODAY is unset, parse_date(task['due']) raises ValueError in overdue_tasks, the except handler tries to access os.environ['TASKLIST_TODAY'], and raises KeyError instead of a clean error. When TASKLIST_TODAY is set to a valid date, the same stored task error is misreported as 'invalid TASKLIST_TODAY'. The handler conflates two distinct error sources: a bad TASKLIST_TODAY value (from today()) and a bad stored due date (from overdue_tasks)."
+    },
+    {
+      "finding_id": "tests-1",
+      "defender": "defender-3",
+      "verdict": "conceded",
+      "quote": "def test_ac5_today_comes_from_the_environment_and_a_bad_value_is_an_error(",
+      "reason": "The test sets TASKLIST_TODAY to various specific values ('2026-09-30', '2026-10-02', 'notadate') and tests plain list without --overdue. However, it does not test the AC-5 fallback cases: when TASKLIST_TODAY is unset (calling list --overdue would then use datetime.date.today()), or when TASKLIST_TODAY is set to an empty string (which should also trigger the fallback per the today() function logic: 'if value:' evaluates False for empty string). A change to the fallback logic (e.g., changing 'if value:' to 'if value is not None:') would go undetected by these tests."
+    },
+    {
+      "finding_id": "tests-2",
+      "defender": "defender-3",
+      "verdict": "conceded",
+      "quote": "for bad in [\"2026-02-30\", \"20261001\", \"2026-2-3\", \"\", \"tomorrow\"]:",
+      "reason": "The test covers several invalid date formats but omits the specific cases the regex [0-9] is designed to exclude. The regex comment explicitly states '[0-9], not \\d: \\d also matches non-ASCII digits', yet the test does not include non-ASCII digit inputs (e.g., fullwidth digits). The test also omits trailing-newline inputs like '2026-10-01\\n', which would fail fullmatch but might pass if the regex were weakened to match or split. Weakening the regex in these ways would go undetected."
+    },
+    {
+      "finding_id": "boundaries-1",
+      "defender": "defender-3",
+      "verdict": "conceded",
+      "quote": "return fail(f\"invalid {TODAY_ENV_VAR}: {os.environ[TODAY_ENV_VAR]}\")",
+      "reason": "At the core/cli boundary, the handler maps every ValueError from overdue_tasks to an 'invalid TASKLIST_TODAY' message without distinguishing the source. When overdue_tasks raises ValueError due to a malformed stored due date (not a bad TASKLIST_TODAY), the exception is mishandled: if TASKLIST_TODAY is unset, os.environ[TODAY_ENV_VAR] raises KeyError; if set to a valid date, the error message is false. This violates AC-5's requirement that 'the TASKLIST_TODAY error line applies only when that variable is invalid'."
+    }
+  ],
+  "diff_sha256": "2b81f01556b2a52a206d52fa44550f2f15f192c472e44a01f8049ba98bb61d6a"
+}

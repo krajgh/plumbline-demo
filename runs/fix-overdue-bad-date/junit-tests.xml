@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="40" time="0.087" timestamp="&lt;timestamp&gt;" hostname="&lt;host&gt;"><testcase classname="tests.test_cli" name="test_add_prints_the_new_id_and_saves_the_task" time="0.002" /><testcase classname="tests.test_cli" name="test_add_with_an_empty_title_is_an_error" time="0.001" /><testcase classname="tests.test_cli" name="test_done_marks_the_task_done_and_prints_its_id" time="0.002" /><testcase classname="tests.test_cli" name="test_done_with_an_unknown_id_is_an_error" time="0.001" /><testcase classname="tests.test_cli" name="test_list_hides_finished_tasks_unless_all_is_given" time="0.001" /><testcase classname="tests.test_cli" name="test_tasklist_file_environment_variable_selects_the_file" time="0.002" /><testcase classname="tests.test_cli" name="test_python_dash_m_exits_with_the_status_from_main" time="0.024" /><testcase classname="tests.test_cli" name="test_ac1_add_with_due_stores_the_date_and_without_stores_no_key" time="0.002" /><testcase classname="tests.test_cli" name="test_ac2_add_with_a_bad_due_is_an_error_and_changes_nothing[2026-02-30]" time="0.002" /><testcase classname="tests.test_cli" name="test_ac2_add_with_a_bad_due_is_an_error_and_changes_nothing[tomorrow]" time="0.001" /><testcase classname="tests.test_cli" name="test_ac2_add_with_a_bad_due_is_an_error_and_changes_nothing[2026-2-3]" time="0.002" /><testcase classname="tests.test_cli" name="test_ac2_add_with_a_bad_due_is_an_error_and_changes_nothing[20261001]" time="0.002" /><testcase classname="tests.test_cli" name="test_ac2_add_with_a_bad_due_is_an_error_and_changes_nothing[2026-13-01]" time="0.001" /><testcase classname="tests.test_cli" name="test_ac2_add_with_a_bad_due_is_an_error_and_changes_nothing[]" time="0.002" /><testcase classname="tests.test_cli" name="test_ac2_add_accepts_a_leap_day" time="0.001" /><testcase classname="tests.test_cli" name="test_ac3_list_shows_the_due_date_of_dated_tasks" time="0.001" /><testcase classname="tests.test_cli" name="test_ac4_list_overdue_shows_open_past_due_tasks_ordered" time="0.002" /><testcase classname="tests.test_cli" name="test_ac5_today_comes_from_the_environment_and_a_bad_value_is_an_error" time="0.002" /><testcase classname="tests.test_cli" name="test_ac6_a_010_file_keeps_working_and_done_adds_no_due_key" time="0.002" /><testcase classname="tests.test_cli" name="test_ac1_overdue_with_a_malformed_stored_due_names_the_task[None]" time="0.001"><failure message="AssertionError: main() raised KeyError('TASKLIST_TODAY')&#10;assert KeyError('TASKLIST_TODAY') is None">tmp_path = PosixPath('/tmp/pytest-of-&lt;user&gt;/pytest-3/test_ac1_overdue_with_a_malfor0')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f964009b510&gt;
+capsys = &lt;_pytest.capture.CaptureFixture object at 0x7f964009b550&gt;, today = None
+
+    @pytest.mark.parametrize("today", [None, "2026-10-01"])
+    def test_ac1_overdue_with_a_malformed_stored_due_names_the_task(
+        tmp_path, monkeypatch, capsys, today
+    ):
+        if today is None:
+            monkeypatch.delenv("TASKLIST_TODAY", raising=False)
+        else:
+            monkeypatch.setenv("TASKLIST_TODAY", today)
+    
+        status, exc = run_overdue_with_bad_due(tmp_path)
+    
+&gt;       assert exc is None, f"main() raised {exc!r}"
+E       AssertionError: main() raised KeyError('TASKLIST_TODAY')
+E       assert KeyError('TASKLIST_TODAY') is None
+
+tests/test_cli.py:255: AssertionError</failure></testcase><testcase classname="tests.test_cli" name="test_ac1_overdue_with_a_malformed_stored_due_names_the_task[2026-10-01]" time="0.001"><failure message="AssertionError: assert ('1' in 'error: invalid TASKLIST_TODAY: 2026-10-01' and 'soon' in 'error: invalid TASKLIST_TODAY: 2026-10-01')">tmp_path = PosixPath('/tmp/pytest-of-&lt;user&gt;/pytest-3/test_ac1_overdue_with_a_malfor1')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7f96400a0610&gt;
+capsys = &lt;_pytest.capture.CaptureFixture object at 0x7f96400a01d0&gt;
+today = '2026-10-01'
+
+    @pytest.mark.parametrize("today", [None, "2026-10-01"])
+    def test_ac1_overdue_with_a_malformed_stored_due_names_the_task(
+        tmp_path, monkeypatch, capsys, today
+    ):
+        if today is None:
+            monkeypatch.delenv("TASKLIST_TODAY", raising=False)
+        else:
+            monkeypatch.setenv("TASKLIST_TODAY", today)
+    
+        status, exc = run_overdue_with_bad_due(tmp_path)
+    
+        assert exc is None, f"main() raised {exc!r}"
+        assert status == 2
+        captured = capsys.readouterr()
+        assert captured.out == ""
+        lines = captured.err.splitlines()
+        assert len(lines) == 1
+&gt;       assert "1" in lines[0] and "soon" in lines[0]
+E       AssertionError: assert ('1' in 'error: invalid TASKLIST_TODAY: 2026-10-01' and 'soon' in 'error: invalid TASKLIST_TODAY: 2026-10-01')
+
+tests/test_cli.py:261: AssertionError</failure></testcase><testcase classname="tests.test_core" name="test_add_task_numbers_from_one_then_highest_id_plus_one" time="0.000" /><testcase classname="tests.test_core" name="test_add_task_rejects_a_blank_title[]" time="0.000" /><testcase classname="tests.test_core" name="test_add_task_rejects_a_blank_title[   ]" time="0.000" /><testcase classname="tests.test_core" name="test_complete_task_marks_only_that_task_done" time="0.000" /><testcase classname="tests.test_core" name="test_complete_task_unknown_id_raises_key_error" time="0.000" /><testcase classname="tests.test_core" name="test_visible_tasks_hides_done_tasks_unless_show_all" time="0.000" /><testcase classname="tests.test_core" name="test_ac1_add_task_with_due_sets_the_due_key_only_when_given" time="0.000" /><testcase classname="tests.test_core" name="test_ac2_add_task_rejects_a_bad_due_and_leaves_tasks_alone[2026-02-30]" time="0.000" /><testcase classname="tests.test_core" name="test_ac2_add_task_rejects_a_bad_due_and_leaves_tasks_alone[tomorrow]" time="0.000" /><testcase classname="tests.test_core" name="test_ac2_add_task_rejects_a_bad_due_and_leaves_tasks_alone[2026-2-3]" time="0.000" /><testcase classname="tests.test_core" name="test_ac2_add_task_rejects_a_bad_due_and_leaves_tasks_alone[20261001]" time="0.000" /><testcase classname="tests.test_core" name="test_ac2_add_task_rejects_a_bad_due_and_leaves_tasks_alone[2026-13-01]" time="0.000" /><testcase classname="tests.test_core" name="test_ac2_add_task_rejects_a_bad_due_and_leaves_tasks_alone[]" time="0.000" /><testcase classname="tests.test_core" name="test_ac2_parse_date_is_strict_and_accepts_a_leap_day" time="0.000" /><testcase classname="tests.test_core" name="test_ac4_ac5_overdue_tasks_filters_and_orders_by_explicit_today" time="0.000" /><testcase classname="tests.test_store" name="test_load_missing_file_returns_empty_list" time="0.001" /><testcase classname="tests.test_store" name="test_save_writes_indented_json_with_sorted_keys" time="0.001" /><testcase classname="tests.test_store" name="test_failed_save_keeps_the_old_file_and_leaves_no_temp_file" time="0.001" /><testcase classname="tests.test_store" name="test_resolve_path_order_is_argument_then_environment_then_default" time="0.000" /></testsuite></testsuites>

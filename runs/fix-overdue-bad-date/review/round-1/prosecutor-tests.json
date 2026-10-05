@@ -1,0 +1,30 @@
+{
+  "lens": "tests",
+  "findings": [
+    {
+      "id": "tests-1",
+      "lens": "tests",
+      "file": "tests/test_cli.py",
+      "line": 261,
+      "claim": "The id assertion is a bare substring check for \"1\", so it would pass with the wrong id or a message that merely contains the digit 1.",
+      "failure_scenario": "The code reports the task's position, a count, or the date part of some other value containing '1' instead of task['id']; the test still passes because the only task has id 1 and the check is `\"1\" in line`.",
+      "rule": "AC-1 (the line contains the task's id and its bad due value)",
+      "evidence": "assert \"1\" in lines[0] and \"soon\" in lines[0]",
+      "outside_code": null,
+      "severity": "MINOR"
+    },
+    {
+      "id": "tests-2",
+      "lens": "tests",
+      "file": "tests/test_cli.py",
+      "line": 232,
+      "claim": "No test covers the open-task qualifier: a done task with a malformed due, or a mix of tasks, is never exercised, so removing the `not task[\"done\"]` guard or the reporting of the correct task among several would go unnoticed.",
+      "failure_scenario": "A change makes list --overdue fail on a done task with due 'soon' (or report the first task rather than the bad one); the only fixture is a single open task with id 1, so every test still passes.",
+      "rule": "AC-1 (\"an open task ... has a malformed stored due date\")",
+      "evidence": "store.save(path, [{\"id\": 1, \"title\": \"a\", \"done\": False, \"due\": \"soon\"}])",
+      "outside_code": null,
+      "severity": "MINOR"
+    }
+  ],
+  "diff_sha256": "8def51394535a59742bb675884c1272a6b30ecb4589dfe2c3ee4a0899a03a3be"
+}

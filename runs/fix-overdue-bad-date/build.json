@@ -1,0 +1,10 @@
+{
+  "files_changed": ["tasklist/cli.py"],
+  "summary": "cmd_list --overdue now evaluates today() in its own try (keeping the invalid TASKLIST_TODAY error), then checks each open task's stored due with core.parse_date and fails with 'error: task <id> has an invalid due date: <due>' (exit 2) before calling core.overdue_tasks. This also removes the KeyError from os.environ[...] when TASKLIST_TODAY was unset.",
+  "acs_addressed": ["AC-1"],
+  "assumptions": [
+    "Only open tasks are checked, matching overdue_tasks, which ignores done tasks.",
+    "If TASKLIST_TODAY is invalid it is reported first, regardless of bad task dues.",
+    "The first malformed task in file order is reported."
+  ]
+}

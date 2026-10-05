@@ -1,0 +1,80 @@
+{
+  "target": "tests",
+  "round": 1,
+  "lenses": [
+    "tests"
+  ],
+  "findings": [
+    {
+      "id": "tests-1",
+      "lens": "tests",
+      "file": "tests/test_cli.py",
+      "line": 195,
+      "claim": "AC-5's rule that an empty TASKLIST_TODAY (and an unset one) falls back to date.today() has no test.",
+      "failure_scenario": "An implementation that treats TASKLIST_TODAY='' as set, so that parse_date('') raises and `list --overdue` exits 2 with 'invalid TASKLIST_TODAY: ', passes every written test, although AC-5 says set-and-non-empty only.",
+      "rule": "AC-5",
+      "evidence": "monkeypatch.setenv(\"TASKLIST_TODAY\", \"notadate\")",
+      "outside_code": null,
+      "severity": "MAJOR",
+      "evidence_unverified": false
+    },
+    {
+      "id": "tests-2",
+      "lens": "tests",
+      "file": "tests/test_cli.py",
+      "line": 195,
+      "claim": "The bad TASKLIST_TODAY case uses only 'notadate', so the strict-form requirement is untested for the environment variable.",
+      "failure_scenario": "today() uses date.fromisoformat directly. TASKLIST_TODAY=20261001 is then accepted on Python 3.11+ instead of exiting 2, and the tests still pass. The plan names this exact risk.",
+      "rule": "AC-5",
+      "evidence": "monkeypatch.setenv(\"TASKLIST_TODAY\", \"notadate\")",
+      "outside_code": null,
+      "severity": "MINOR",
+      "evidence_unverified": false
+    },
+    {
+      "id": "tests-3",
+      "lens": "tests",
+      "file": "tests/test_cli.py",
+      "line": 113,
+      "claim": "The CLI overdue fixture lists id 2 before id 7, so the tie-break by id is not exercised at the CLI level. The AC-4 verification calls for the lower id to be listed later in the file.",
+      "failure_scenario": "cmd_list sorts by due only. A stable sort keeps file order, 2 then 7, so the CLI test passes without an id tie-break. Only the core test catches the missing tie-break, so a CLI that sorts independently of core.overdue_tasks is not caught.",
+      "rule": "AC-4",
+      "evidence": "{\"id\": 7, \"title\": \"g\", \"done\": False, \"due\": \"2026-09-01\"},",
+      "outside_code": null,
+      "severity": "MINOR",
+      "evidence_unverified": false
+    },
+    {
+      "id": "tests-4",
+      "lens": "tests",
+      "file": "tests/test_core.py",
+      "line": 112,
+      "claim": "No test checks that core.overdue_tasks never reads the clock or the environment, which AC-5 requires.",
+      "failure_scenario": "overdue_tasks ignores its `today` argument and reads TASKLIST_TODAY or date.today(). The core test passes only if the ambient clock happens to match one of the dates, and it would still fail on the 2026-01-01 case. A variant that reads the environment only when the argument is None is not caught.",
+      "rule": "AC-5",
+      "evidence": "ids = lambda today: [x[\"id\"] for x in core.overdue_tasks(tasks, today)]",
+      "outside_code": null,
+      "severity": "MINOR",
+      "evidence_unverified": false
+    }
+  ],
+  "defenses": [],
+  "survivors": [
+    "tests-1",
+    "tests-2",
+    "tests-3",
+    "tests-4"
+  ],
+  "gaps": [],
+  "blockers_surviving": 0,
+  "routes": {
+    "builder": [],
+    "test-writer": [
+      "tests-1",
+      "tests-2",
+      "tests-3",
+      "tests-4"
+    ]
+  },
+  "diff_sha256": "313a165962ac725e71752f3c1219493b97ed22a48d405747e4fed2eff175d17b"
+}

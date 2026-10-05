@@ -1,0 +1,189 @@
+{
+  "target": "diff",
+  "round": 1,
+  "lenses": [
+    "correctness",
+    "tests",
+    "security",
+    "data",
+    "boundaries"
+  ],
+  "findings": [
+    {
+      "id": "correctness-1",
+      "lens": "correctness",
+      "file": "tasklist/cli.py",
+      "line": 74,
+      "claim": "cmd_list treats every ValueError from overdue_tasks as a bad TASKLIST_TODAY and indexes os.environ directly, so a malformed stored due date crashes with KeyError when TASKLIST_TODAY is unset, or blames the env var when it is set and valid.",
+      "failure_scenario": "tasks.json contains a task with \"due\": \"soon\" (hand-edited). Run `list --overdue` with TASKLIST_TODAY unset: parse_date raises ValueError inside overdue_tasks, the handler evaluates os.environ['TASKLIST_TODAY'] and raises KeyError with a traceback. With TASKLIST_TODAY=2026-10-01 it prints 'error: invalid TASKLIST_TODAY: 2026-10-01', a false message.",
+      "rule": "AC-5 (the invalid TASKLIST_TODAY error only when the variable is set and invalid)",
+      "evidence": "return fail(f\"invalid {TODAY_ENV_VAR}: {os.environ[TODAY_ENV_VAR]}\")",
+      "outside_code": null,
+      "severity": "MINOR",
+      "evidence_unverified": false
+    },
+    {
+      "id": "tests-1",
+      "lens": "tests",
+      "file": "tests/test_cli.py",
+      "line": 191,
+      "claim": "No test covers the AC-5 fallbacks: TASKLIST_TODAY unset or set to an empty string falling back to the real clock.",
+      "failure_scenario": "Change `if value:` in cli.today to `if value is not None:` (empty TASKLIST_TODAY then makes list --overdue exit 2), or make the fallback return a fixed date; every test still passes because each test sets a non-empty TASKLIST_TODAY.",
+      "rule": "AC-5",
+      "evidence": "def test_ac5_today_comes_from_the_environment_and_a_bad_value_is_an_error(",
+      "outside_code": null,
+      "severity": "MAJOR",
+      "evidence_unverified": false
+    },
+    {
+      "id": "tests-2",
+      "lens": "tests",
+      "file": "tests/test_core.py",
+      "line": 95,
+      "claim": "Strictness tests omit non-ASCII digits and trailing-newline inputs, the cases the regex exists for, so weakening the regex goes undetected.",
+      "failure_scenario": "Replace [0-9] with \\d in parse_date, or use re.match with $ instead of fullmatch: fullwidth digits or '2026-10-01\\n' would then be accepted by add --due, and no test fails.",
+      "rule": "AC-2",
+      "evidence": "for bad in [\"2026-02-30\", \"20261001\", \"2026-2-3\", \"\", \"tomorrow\"]:",
+      "outside_code": null,
+      "severity": "MINOR",
+      "evidence_unverified": false
+    },
+    {
+      "id": "boundaries-1",
+      "lens": "boundaries",
+      "file": "tasklist/cli.py",
+      "line": 74,
+      "claim": "cmd_list maps every ValueError from overdue_tasks to 'invalid TASKLIST_TODAY' and reads os.environ[...] unconditionally, so a malformed stored due date is misreported, or crashes with KeyError when the variable is unset.",
+      "failure_scenario": "tasks.json holds a hand-edited task with \"due\":\"soon\"; TASKLIST_TODAY is unset; `list --overdue` makes core.overdue_tasks raise ValueError from parse_date(task['due']); the handler evaluates os.environ['TASKLIST_TODAY'], raises KeyError and prints a traceback instead of a clean error. With the variable set to a valid date, it wrongly prints 'error: invalid TASKLIST_TODAY: 2026-10-01'.",
+      "rule": "AC-5 (the TASKLIST_TODAY error line applies only when that variable is invalid); error propagation at the core/cli boundary",
+      "evidence": "return fail(f\"invalid {TODAY_ENV_VAR}: {os.environ[TODAY_ENV_VAR]}\")",
+      "outside_code": null,
+      "severity": "MINOR",
+      "evidence_unverified": false
+    }
+  ],
+  "defenses": [
+    {
+      "finding_id": "correctness-1",
+      "defender": "defender-1",
+      "verdict": "conceded",
+      "quote": "return fail(f\"invalid {TODAY_ENV_VAR}: {os.environ[TODAY_ENV_VAR]}\")",
+      "reason": "The error handler on line 74 catches all ValueError from overdue_tasks without distinguishing between invalid TASKLIST_TODAY and malformed task due dates. If TASKLIST_TODAY is unset, accessing os.environ[TODAY_ENV_VAR] raises KeyError. If TASKLIST_TODAY is valid but a task has a malformed due date, the error message falsely reports 'invalid TASKLIST_TODAY'."
+    },
+    {
+      "finding_id": "correctness-1",
+      "defender": "defender-2",
+      "verdict": "conceded",
+      "quote": "        except ValueError:\n            return fail(f\"invalid {TODAY_ENV_VAR}: {os.environ[TODAY_ENV_VAR]}\")",
+      "reason": "The code unconditionally indexes os.environ[TODAY_ENV_VAR] when catching ValueError from overdue_tasks. This ValueError could originate from either today() or from parse_date(task[\"due\"]) inside overdue_tasks. When it comes from a malformed stored due date, the error message is incorrect and accessing os.environ will raise KeyError if TASKLIST_TODAY is unset."
+    },
+    {
+      "finding_id": "correctness-1",
+      "defender": "defender-3",
+      "verdict": "conceded",
+      "quote": "return fail(f\"invalid {TODAY_ENV_VAR}: {os.environ[TODAY_ENV_VAR]}\")",
+      "reason": "The code unconditionally accesses os.environ[TODAY_ENV_VAR] without first checking if TASKLIST_TODAY is set. When a stored task has a malformed due date and TASKLIST_TODAY is unset, parse_date(task['due']) raises ValueError in overdue_tasks, the except handler tries to access os.environ['TASKLIST_TODAY'], and raises KeyError instead of a clean error. When TASKLIST_TODAY is set to a valid date, the same stored task error is misreported as 'invalid TASKLIST_TODAY'. The handler conflates two distinct error sources: a bad TASKLIST_TODAY value (from today()) and a bad stored due date (from overdue_tasks)."
+    },
+    {
+      "finding_id": "tests-1",
+      "defender": "defender-1",
+      "verdict": "conceded",
+      "quote": "def test_ac5_today_comes_from_the_environment_and_a_bad_value_is_an_error(\n    tmp_path, monkeypatch, capsys\n):",
+      "reason": "The test sets TASKLIST_TODAY to explicit values ('2026-09-30', '2026-10-02', 'notadate') but never tests the fallback behavior when TASKLIST_TODAY is unset or set to an empty string, which should cause today() to return datetime.date.today()."
+    },
+    {
+      "finding_id": "tests-1",
+      "defender": "defender-2",
+      "verdict": "conceded",
+      "quote": "    monkeypatch.setenv(\"TASKLIST_TODAY\", \"2026-09-30\")\n    assert run(path, \"list\", \"--overdue\") == 0\n    assert capsys.readouterr().out == \"\"\n    monkeypatch.setenv(\"TASKLIST_TODAY\", \"2026-10-02\")\n    assert run(path, \"list\", \"--overdue\") == 0\n    assert capsys.readouterr().out == \"[ ] 1 Pay rent (due 2026-10-01)\\n\"\n\n    monkeypatch.setenv(\"TASKLIST_TODAY\", \"notadate\")",
+      "reason": "The test_ac5_today_comes_from_the_environment_and_a_bad_value_is_an_error test always sets TASKLIST_TODAY to some value; it never tests the fallback path when TASKLIST_TODAY is unset or empty, which should fall back to datetime.date.today(). A change from `if value:` to `if value is not None:` would not be caught by these tests."
+    },
+    {
+      "finding_id": "tests-1",
+      "defender": "defender-3",
+      "verdict": "conceded",
+      "quote": "def test_ac5_today_comes_from_the_environment_and_a_bad_value_is_an_error(",
+      "reason": "The test sets TASKLIST_TODAY to various specific values ('2026-09-30', '2026-10-02', 'notadate') and tests plain list without --overdue. However, it does not test the AC-5 fallback cases: when TASKLIST_TODAY is unset (calling list --overdue would then use datetime.date.today()), or when TASKLIST_TODAY is set to an empty string (which should also trigger the fallback per the today() function logic: 'if value:' evaluates False for empty string). A change to the fallback logic (e.g., changing 'if value:' to 'if value is not None:') would go undetected by these tests."
+    },
+    {
+      "finding_id": "tests-2",
+      "defender": "defender-1",
+      "verdict": "conceded",
+      "quote": "for bad in [\"2026-02-30\", \"20261001\", \"2026-2-3\", \"\", \"tomorrow\"]:",
+      "reason": "The test cases for parse_date strictness omit non-ASCII digits and trailing-newline inputs. The code explicitly uses [0-9] instead of \\d to reject non-ASCII digits and uses fullmatch instead of match to reject trailing characters, but the test does not verify these edge cases."
+    },
+    {
+      "finding_id": "tests-2",
+      "defender": "defender-2",
+      "verdict": "conceded",
+      "quote": "    for bad in [\"2026-02-30\", \"20261001\", \"2026-2-3\", \"\", \"tomorrow\"]:",
+      "reason": "The test_ac2_parse_date_is_strict_and_accepts_a_leap_day test case list omits non-ASCII digits and trailing-newline inputs. The regex uses [0-9] instead of \\d specifically to exclude non-ASCII digits, and fullmatch requires exact matching. Weakening the regex to use \\d or re.match would not be detected by this test."
+    },
+    {
+      "finding_id": "tests-2",
+      "defender": "defender-3",
+      "verdict": "conceded",
+      "quote": "for bad in [\"2026-02-30\", \"20261001\", \"2026-2-3\", \"\", \"tomorrow\"]:",
+      "reason": "The test covers several invalid date formats but omits the specific cases the regex [0-9] is designed to exclude. The regex comment explicitly states '[0-9], not \\d: \\d also matches non-ASCII digits', yet the test does not include non-ASCII digit inputs (e.g., fullwidth digits). The test also omits trailing-newline inputs like '2026-10-01\\n', which would fail fullmatch but might pass if the regex were weakened to match or split. Weakening the regex in these ways would go undetected."
+    },
+    {
+      "finding_id": "boundaries-1",
+      "defender": "defender-1",
+      "verdict": "conceded",
+      "quote": "return fail(f\"invalid {TODAY_ENV_VAR}: {os.environ[TODAY_ENV_VAR]}\")",
+      "reason": "The error handler unconditionally reads os.environ[TODAY_ENV_VAR] when catching ValueError from overdue_tasks, which could originate from a malformed task due date. When TASKLIST_TODAY is unset, this causes KeyError. When set to a valid value, it incorrectly reports the variable as invalid even though the error source is a task's malformed due date."
+    },
+    {
+      "finding_id": "boundaries-1",
+      "defender": "defender-2",
+      "verdict": "conceded",
+      "quote": "        except ValueError:\n            return fail(f\"invalid {TODAY_ENV_VAR}: {os.environ[TODAY_ENV_VAR]}\")",
+      "reason": "The error handler in cmd_list catches all ValueErrors from overdue_tasks and unconditionally reads os.environ[TODAY_ENV_VAR]. Since overdue_tasks can raise ValueError from parsing stored task due dates, not just from TASKLIST_TODAY, this misattributes the error. When TASKLIST_TODAY is unset, os.environ[TODAY_ENV_VAR] will raise KeyError instead of producing a clean error message."
+    },
+    {
+      "finding_id": "boundaries-1",
+      "defender": "defender-3",
+      "verdict": "conceded",
+      "quote": "return fail(f\"invalid {TODAY_ENV_VAR}: {os.environ[TODAY_ENV_VAR]}\")",
+      "reason": "At the core/cli boundary, the handler maps every ValueError from overdue_tasks to an 'invalid TASKLIST_TODAY' message without distinguishing the source. When overdue_tasks raises ValueError due to a malformed stored due date (not a bad TASKLIST_TODAY), the exception is mishandled: if TASKLIST_TODAY is unset, os.environ[TODAY_ENV_VAR] raises KeyError; if set to a valid date, the error message is false. This violates AC-5's requirement that 'the TASKLIST_TODAY error line applies only when that variable is invalid'."
+    }
+  ],
+  "survivors": [
+    "correctness-1",
+    "tests-1",
+    "tests-2",
+    "boundaries-1"
+  ],
+  "gaps": [
+    {
+      "id": "G-1",
+      "kind": "edge_case",
+      "detail": "A --due value that starts with a dash (for example `add X --due -5` or `--due -foo`) is parsed by argparse as an option or fails as a missing argument. argparse then prints its own usage message and exits 2, not the exact one-line `error: invalid due date: <value>` that AC-2 requires (value verbatim). Fix in tasklist/cli.py: accept the value via `--due=VALUE` semantics or a custom type. Then add a parametrised case in tests/test_cli.py using `--due=-5`, or document the limitation.",
+      "ac": "AC-2"
+    },
+    {
+      "id": "G-2",
+      "kind": "missing_test",
+      "detail": "No test pins the ordering of checks in cmd_add (tasklist/cli.py). The plan's risks say a blank title with a bad due reports the title error first. The code picks the message with `args.title.strip()`, which is fragile. Add a test in tests/test_cli.py for `add '  ' --due tomorrow` expecting exit 2, stderr `error: title must not be empty`, and an unchanged file. Add a second case for a blank title with a valid due.",
+      "ac": "AC-2"
+    },
+    {
+      "id": "G-3",
+      "kind": "missing_test",
+      "detail": "AC-5 requires that core.overdue_tasks never reads the clock or environment, and no test checks it. Add a test in tests/test_core.py that calls overdue_tasks with explicit dates while TASKLIST_TODAY is set to a conflicting or invalid value via monkeypatch. It should also patch datetime.date.today to raise, and the result should still depend only on the `today` argument.",
+      "ac": "AC-5"
+    }
+  ],
+  "blockers_surviving": 0,
+  "routes": {
+    "builder": [
+      "correctness-1",
+      "boundaries-1"
+    ],
+    "test-writer": [
+      "tests-1",
+      "tests-2"
+    ]
+  },
+  "diff_sha256": "2b81f01556b2a52a206d52fa44550f2f15f192c472e44a01f8049ba98bb61d6a"
+}
