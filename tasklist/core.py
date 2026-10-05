@@ -17,7 +17,7 @@ class Task(TypedDict):
 def parse_date(text: str) -> datetime.date:
     """Parse a strict YYYY-MM-DD date. Raises ValueError for anything else."""
     # [0-9], not \d: \d also matches non-ASCII digits
-    if not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", text):
+    if not isinstance(text, str) or not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", text):
         raise ValueError(f"invalid date: {text}")
     return datetime.date.fromisoformat(text)
 

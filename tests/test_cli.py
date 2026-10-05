@@ -260,3 +260,24 @@ def test_ac1_overdue_with_a_malformed_stored_due_names_the_task(
     assert len(lines) == 1
     assert "1" in lines[0] and "soon" in lines[0]
     assert "TASKLIST_TODAY" not in lines[0]
+
+
+@pytest.mark.parametrize("bad", [None, 20261001])
+def test_ac1_overdue_with_a_non_string_stored_due_names_the_task(
+    tmp_path, monkeypatch, capsys, bad
+):
+    monkeypatch.setenv("TASKLIST_TODAY", "2026-10-01")
+    path = tmp_path / "tasks.json"
+    store.save(path, [{"id": 7, "title": "a", "done": False, "due": bad}])
+
+    try:
+        status = run(path, "list", "--overdue")
+    except Exception as exc:
+        pytest.fail(f"main() raised {exc!r}")
+
+    assert status == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    lines = captured.err.splitlines()
+    assert len(lines) == 1
+    assert "7" in lines[0] and str(bad) in lines[0]
