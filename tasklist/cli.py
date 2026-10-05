@@ -15,7 +15,8 @@ TODAY_ENV_VAR = "TASKLIST_TODAY"
 def format_task(task: core.Task) -> str:
     """Return the one-line form of a task, such as "[x] 2 Call Sam (due 2026-10-01)"."""
     mark = "x" if task["done"] else " "
-    line = f"[{mark}] {task['id']} {task['title']}"
+    marker = "! " if task.get("priority") == "high" else ""
+    line = f"[{mark}] {task['id']} {marker}{task['title']}"
     if task.get("due"):
         line += f" (due {task['due']})"
     if task.get("tags"):
@@ -42,12 +43,14 @@ def fail(message: str) -> int:
 
 def cmd_add(args: argparse.Namespace, path: Path) -> int:
     """Add a task and print its id."""
+    if args.priority not in core.PRIORITIES:
+        return fail(f"invalid priority: {args.priority}")
     for name in args.tags or []:
         if not core.is_valid_tag(name):
             return fail(f"invalid tag: {name}")
     tasks = store.load(path)
     try:
-        task = core.add_task(tasks, args.title, args.due, args.tags)
+        task = core.add_task(tasks, args.title, args.due, args.tags, args.priority)
     except ValueError as error:
         if args.title.strip():  # the title is fine, so the due date was bad
             return fail(f"invalid due date: {args.due}")
@@ -75,6 +78,14 @@ def bad_tags(tasks: list[core.Task]) -> str | None:
         tags = task.get("tags", [])
         if not isinstance(tags, list) or not all(isinstance(t, str) for t in tags):
             return f"task {task['id']} has invalid tags: {tags!r}"
+    return None
+
+
+def bad_priority(tasks: list[core.Task]) -> str | None:
+    """Return an error message for the first task whose present priority is not a known one."""
+    for task in tasks:
+        if "priority" in task and task["priority"] not in core.PRIORITIES:
+            return f"task {task['id']} has an invalid priority: {task['priority']!r}"
     return None
 
 
@@ -129,8 +140,15 @@ def cmd_list(args: argparse.Namespace, path: Path) -> int:
         message = bad_tags([t for t in tasks if not t["done"]])  # every open task, like due dates
         if message:
             return fail(message)
+        message = bad_priority([t for t in tasks if not t["done"]])
+        if message:
+            return fail(message)
         shown = core.overdue_tasks(tasks, now)
     else:
+        # check before sorting (an unsortable value must not raise) and before the --tag filter
+        message = bad_priority(tasks if args.show_all else [t for t in tasks if not t["done"]])
+        if message:
+            return fail(message)
         shown = core.visible_tasks(tasks, show_all=args.show_all)
     message = bad_tags(shown)
     if message:
@@ -157,6 +175,9 @@ def build_parser() -> argparse.ArgumentParser:
     add.add_argument("--due", metavar="DATE", help="due date, YYYY-MM-DD")
     add.add_argument(
         "--tag", dest="tags", metavar="NAME", action="append", help="tag (repeatable)"
+    )
+    add.add_argument(
+        "--priority", metavar="LEVEL", default="normal", help="high, normal (default) or low"
     )
     add.set_defaults(handler=cmd_add)
 

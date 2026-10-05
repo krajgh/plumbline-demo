@@ -13,6 +13,10 @@ class Task(TypedDict):
     done: bool
     due: NotRequired[str]  # ISO date, YYYY-MM-DD; absent when the task has none
     tags: NotRequired[list[str]]  # absent when the task has none
+    priority: NotRequired[str]  # "high" or "low"; absent means normal
+
+
+PRIORITIES = ("high", "normal", "low")  # rank = index
 
 
 def parse_date(text: str) -> datetime.date:
@@ -29,7 +33,11 @@ def is_valid_tag(name: str) -> bool:
 
 
 def add_task(
-    tasks: list[Task], title: str, due: str | None = None, tags: list[str] | None = None
+    tasks: list[Task],
+    title: str,
+    due: str | None = None,
+    tags: list[str] | None = None,
+    priority: str = "normal",
 ) -> Task:
     """Append a new open task to tasks and return it.
 
@@ -46,12 +54,16 @@ def add_task(
     for name in tags or []:
         if not is_valid_tag(name):
             raise ValueError(f"invalid tag: {name}")
+    if priority not in PRIORITIES:
+        raise ValueError(f"invalid priority: {priority}")
     next_id = max((task["id"] for task in tasks), default=0) + 1
     task: Task = {"id": next_id, "title": title, "done": False}
     if due is not None:
         task["due"] = due
     if tags:
         task["tags"] = list(dict.fromkeys(tags))
+    if priority != "normal":
+        task["priority"] = priority
     tasks.append(task)
     return task
 
@@ -102,9 +114,12 @@ def complete_task(tasks: list[Task], task_id: int) -> Task:
 
 
 def visible_tasks(tasks: list[Task], show_all: bool = False) -> list[Task]:
-    """Return the tasks to display, in id order: open tasks only, unless show_all."""
+    """Return the tasks to display, by priority then id: open tasks only, unless show_all.
+
+    Stored priorities must already be valid (the CLI checks them first).
+    """
     shown = tasks if show_all else [task for task in tasks if not task["done"]]
-    return sorted(shown, key=lambda task: task["id"])
+    return sorted(shown, key=lambda task: (PRIORITIES.index(task.get("priority", "normal")), task["id"]))
 
 
 def overdue_tasks(tasks: list[Task], today: datetime.date) -> list[Task]:
