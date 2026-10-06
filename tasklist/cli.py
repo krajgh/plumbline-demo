@@ -160,6 +160,31 @@ def cmd_list(args: argparse.Namespace, path: Path) -> int:
     return 0
 
 
+def cmd_stats(args: argparse.Namespace, path: Path) -> int:
+    """Print counts of open and done tasks, by priority, overdue, and open tasks per tag."""
+    tasks = store.load(path)
+    try:
+        now = today()
+    except ValueError:
+        return fail(f"invalid {TODAY_ENV_VAR}: {os.environ[TODAY_ENV_VAR]}")
+    open_tasks = [t for t in tasks if not t["done"]]
+    for task in open_tasks:
+        if "due" in task:
+            try:
+                core.parse_date(task["due"])
+            except ValueError:
+                return fail(f"task {task['id']} has an invalid due date: {task['due']}")
+    message = bad_tags(tasks if args.tag is not None else open_tasks) or bad_priority(open_tasks)
+    if message:
+        return fail(message)
+    counts, per_tag = core.task_stats(tasks, now, args.tag)
+    for key, value in counts.items():
+        print(f"{key}: {value}")
+    for name, value in per_tag.items():
+        print(f"#{name}: {value}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Create the argument parser, with its add, done and list subcommands."""
     parser = argparse.ArgumentParser(prog="tasklist", description="A tiny to-do list.")
@@ -205,6 +230,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
     show.add_argument("--tag", metavar="NAME", help="only tasks with this tag")
     show.set_defaults(handler=cmd_list)
+
+    stats = commands.add_parser("stats", help="count tasks")
+    stats.add_argument("--tag", metavar="NAME", help="only count tasks with this tag")
+    stats.set_defaults(handler=cmd_stats)
 
     return parser
 

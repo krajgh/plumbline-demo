@@ -122,6 +122,30 @@ def visible_tasks(tasks: list[Task], show_all: bool = False) -> list[Task]:
     return sorted(shown, key=lambda task: (PRIORITIES.index(task.get("priority", "normal")), task["id"]))
 
 
+def task_stats(
+    tasks: list[Task], today: datetime.date, tag: str | None = None
+) -> tuple[dict[str, int], dict[str, int]]:
+    """Return (counts, per-tag open counts); the latter is empty when tag is given.
+
+    counts has open, done, high, normal, low and overdue. Stored values must already be valid.
+    """
+    if tag is not None:
+        tasks = tagged_tasks(tasks, tag)
+    open_tasks = [task for task in tasks if not task["done"]]
+    counts = {
+        "open": len(open_tasks),
+        "done": len(tasks) - len(open_tasks),
+        **{p: sum(t.get("priority", "normal") == p for t in open_tasks) for p in PRIORITIES},
+        "overdue": len(overdue_tasks(open_tasks, today)),
+    }
+    per_tag: dict[str, int] = {}
+    if tag is None:
+        for task in open_tasks:
+            for name in set(task.get("tags", [])):
+                per_tag[name] = per_tag.get(name, 0) + 1
+    return counts, dict(sorted(per_tag.items(), key=lambda item: (-item[1], item[0])))
+
+
 def overdue_tasks(tasks: list[Task], today: datetime.date) -> list[Task]:
     """Return the open tasks due before today, ordered by due date, then id."""
     late = [
