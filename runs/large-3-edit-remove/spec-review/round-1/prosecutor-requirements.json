@@ -1,0 +1,18 @@
+{
+  "lens": "requirements",
+  "findings": [
+    {
+      "id": "requirements-1",
+      "lens": "requirements",
+      "file": ".plumbline/runs/0f44eee-20261005T151939Z/plan.json",
+      "line": 27,
+      "claim": "AC-4 defines 'no field option' as none of the options being present, but the test plan never checks an empty-string option (--title '' or --due ''), so a build that tests truthiness instead of presence passes.",
+      "failure_scenario": "A build treats `edit 1 --title ''` as no field and prints 'nothing to edit' (or treats --due '' as absent) instead of the required blank-title / invalid due date error; both exit 2, so the only visible difference is the stderr text, which no test checks for the empty string.",
+      "rule": "AC-1, AC-4 (request: a blank title is refused; every value validated)",
+      "evidence": "`edit` with no field option (none of --title, --due, --no-due, --priority) exits 2 with one `error: ...` line on stderr and changes nothing.",
+      "outside_code": null,
+      "severity": "MINOR"
+    }
+  ],
+  "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

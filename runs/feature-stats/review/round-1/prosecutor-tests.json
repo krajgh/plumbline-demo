@@ -1,0 +1,30 @@
+{
+  "lens": "tests",
+  "findings": [
+    {
+      "id": "tests-1",
+      "lens": "tests",
+      "file": "tests/test_stats.py",
+      "line": 75,
+      "claim": "No test stores a duplicated tag inside one task, so the 'a task counts once per tag' rule of AC-3 is unchecked.",
+      "failure_scenario": "Remove the set() in task_stats (for name in task.get('tags', [])); a task tagged [\"a\",\"a\"] then counts twice for #a, and every test in test_stats.py still passes.",
+      "rule": "AC-3",
+      "evidence": "t(1, tags=[\"b\", \"a\"]), t(2, tags=[\"b\"]), t(3, tags=[\"c\"]), t(4, True, tags=[\"z\"]),",
+      "outside_code": null,
+      "severity": "MINOR"
+    },
+    {
+      "id": "tests-2",
+      "lens": "tests",
+      "file": "tests/test_stats.py",
+      "line": 136,
+      "claim": "Only the due-before-priority order is tested; due-before-tags and tags-before-priority, which AC-6 also fixes, are not.",
+      "failure_scenario": "Change cmd_stats so bad_tags runs before the due loop, or bad_priority before bad_tags. With open task 1 tagged \"x\" and task 2 having a bad due date (or task 1 having a bad priority and task 2 bad tags), the error names the wrong task, and all tests still pass.",
+      "rule": "AC-6",
+      "evidence": "path = write(tmp_path, [t(1, priority=\"urgent\"), t(2, due=\"2026-13-45\")])",
+      "outside_code": null,
+      "severity": "MINOR"
+    }
+  ],
+  "diff_sha256": "88cd2e34c627c35c4f82b4e85530a4f8cf4c17875a946323cc60a0f12164eb57"
+}

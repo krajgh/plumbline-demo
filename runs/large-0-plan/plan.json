@@ -1,0 +1,140 @@
+{
+  "goal": "Add tags, priorities, edit and remove to tasklist, keeping task files from earlier versions working and unchanged in output.",
+  "non_goals": [
+    "No tag renaming, no tag listing command, no filtering by priority.",
+    "No migration or rewrite of old task files: missing keys are read as defaults and only written when a command changes that task.",
+    "No change to the add/done output, to the --file/TASKLIST_FILE handling, or to TASKLIST_TODAY."
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "statement": "`add TITLE --tag NAME` (repeatable) stores the tags on the new task as a JSON list under key \"tags\", in the order given with duplicates dropped; with no --tag no \"tags\" key is stored. A valid tag matches [a-z0-9-]+ (non-empty, ASCII only). If any tag is invalid, nothing is stored (the file is not created or changed), exit status is 2, and stderr is exactly one line of the form `error: invalid tag: VALUE` naming the offending value. Success still prints `added ID`.",
+      "verification": "test_cli tests running main() with --file and reading the JSON file back."
+    },
+    {
+      "id": "AC-2",
+      "statement": "`tag ID NAME` adds NAME to the task's \"tags\" (creating the key if missing; already present is a no-op with exit 0) and prints `tagged ID`. `untag ID NAME` removes it, deletes the \"tags\" key when it becomes empty, and prints `untagged ID`; untagging a tag the task does not carry exits 2 with one stderr line. An unknown id exits 2 with one stderr line `error: no task with id ID`, changing nothing. An invalid NAME for `tag` exits 2 as in AC-1, changing nothing.",
+      "verification": "test_cli tests on the file contents, exit status and stderr line count."
+    },
+    {
+      "id": "AC-3",
+      "statement": "`list` appends a task's tags to its line after the title and any due date, space separated, each as `#NAME`, e.g. `[ ] 1 Call Sam (due 2026-10-01) #work #home`; a task with no tags (or no \"tags\" key) gets no trailing text. `list --tag NAME` shows only tasks whose tags include NAME. It combines with --all (include done tasks carrying the tag) and with --overdue (only overdue tasks carrying the tag). An invalid NAME for --tag exits 2 with one stderr line `error: invalid tag: VALUE`.",
+      "verification": "test_cli tests comparing captured stdout line by line."
+    },
+    {
+      "id": "AC-4",
+      "statement": "`add TITLE --priority high|normal|low` stores the value under key \"priority\"; with no option it stores \"normal\". Any other value exits 2 with one stderr line `error: invalid priority: VALUE` and nothing is stored. A task lacking the key is treated as normal everywhere.",
+      "verification": "test_cli tests on file contents and stderr."
+    },
+    {
+      "id": "AC-5",
+      "statement": "`list` (with or without --all, --tag) orders the shown tasks by priority (high, normal, low) then by id. A high-priority task's line has `! ` (exclamation mark and one space) immediately before its title, i.e. `[ ] 3 ! Pay rent`; normal and low tasks have no marker. `list --overdue` keeps its existing oldest-due-first order regardless of priority, and still shows the `! ` marker on high tasks.",
+      "verification": "test_cli tests with mixed priorities and ids, comparing stdout order; core unit tests for the sort."
+    },
+    {
+      "id": "AC-6",
+      "statement": "`edit ID [--title T] [--due DATE | --no-due] [--priority P]` changes only the given fields and prints `edited ID`. --no-due removes the \"due\" key. The title is stripped like in add. Exit 2 with one stderr line and the file unchanged when: the id is unknown (`error: no task with id ID`), the title is blank, the due date is not YYYY-MM-DD (`error: invalid due date: VALUE`), the priority is invalid (as AC-4), no field option is given, or --due and --no-due are both given. Tags, done state and id are never altered by edit. Validation of all values happens before any change, so a bad value alongside a good one changes nothing.",
+      "verification": "test_cli tests on file contents before and after; core unit tests for edit_task."
+    },
+    {
+      "id": "AC-7",
+      "statement": "`remove ID` deletes the task from the file and prints `removed ID`. Other tasks are untouched and ids are not renumbered. An unknown id exits 2 with one stderr line `error: no task with id ID` and the file is unchanged.",
+      "verification": "test_cli tests on file contents; core unit test for remove_task."
+    },
+    {
+      "id": "AC-8",
+      "statement": "A task file written by an earlier version (tasks with only id, title, done and optionally due) loads; `list`, `list --all`, `list --overdue`, `list --tag x`, `done` and `edit` work on it; its tasks print exactly as before (no marker, no tag text); `done` on it adds no \"tags\" or \"priority\" key, and `edit` adds only the keys it was asked to change.",
+      "verification": "test_cli tests with a hand-written 0.1.0-style JSON file, comparing stdout to the pre-change format and the JSON afterward."
+    }
+  ],
+  "interfaces": [
+    {
+      "name": "validate_tag",
+      "file": "tasklist/core.py",
+      "signature": "def validate_tag(name: str) -> str  # returns name; raises ValueError unless re.fullmatch(r'[a-z0-9-]+', name)"
+    },
+    {
+      "name": "PRIORITIES / validate_priority",
+      "file": "tasklist/core.py",
+      "signature": "PRIORITIES = ('high', 'normal', 'low'); def validate_priority(value: str) -> str  # raises ValueError"
+    },
+    {
+      "name": "Task",
+      "file": "tasklist/core.py",
+      "signature": "class Task(TypedDict): id, title, done, due: NotRequired[str], tags: NotRequired[list[str]], priority: NotRequired[str]"
+    },
+    {
+      "name": "add_task",
+      "file": "tasklist/core.py",
+      "signature": "def add_task(tasks, title, due=None, tags: list[str] | None = None, priority: str = 'normal') -> Task  # ValueError on bad input, before appending"
+    },
+    {
+      "name": "tag_task / untag_task",
+      "file": "tasklist/core.py",
+      "signature": "def tag_task(tasks, task_id: int, name: str) -> Task; def untag_task(tasks, task_id: int, name: str) -> Task  # KeyError unknown id; ValueError bad name (tag) or tag absent (untag)"
+    },
+    {
+      "name": "edit_task",
+      "file": "tasklist/core.py",
+      "signature": "def edit_task(tasks, task_id: int, title: str | None = None, due: str | None = None, no_due: bool = False, priority: str | None = None) -> Task  # KeyError unknown id; ValueError invalid value, nothing changed"
+    },
+    {
+      "name": "remove_task",
+      "file": "tasklist/core.py",
+      "signature": "def remove_task(tasks, task_id: int) -> Task  # KeyError unknown id"
+    },
+    {
+      "name": "visible_tasks",
+      "file": "tasklist/core.py",
+      "signature": "def visible_tasks(tasks, show_all: bool = False, tag: str | None = None) -> list[Task]  # priority then id order"
+    },
+    {
+      "name": "overdue_tasks",
+      "file": "tasklist/core.py",
+      "signature": "def overdue_tasks(tasks, today: datetime.date, tag: str | None = None) -> list[Task]  # existing order kept"
+    },
+    {
+      "name": "format_task",
+      "file": "tasklist/cli.py",
+      "signature": "def format_task(task: core.Task) -> str  # '[ ] 3 ! Title (due D) #a #b'"
+    },
+    {
+      "name": "cmd_tag / cmd_untag / cmd_edit / cmd_remove",
+      "file": "tasklist/cli.py",
+      "signature": "def cmd_X(args: argparse.Namespace, path: Path) -> int; subcommands tag ID NAME, untag ID NAME, edit ID [--title T] [--due D | --no-due] [--priority P], remove ID"
+    },
+    {
+      "name": "add and list options",
+      "file": "tasklist/cli.py",
+      "signature": "add: --tag NAME (action=append), --priority VALUE; list: --tag NAME. Values validated in handlers (not argparse choices) so errors are one line `error: ...`"
+    }
+  ],
+  "test_plan": [
+    {"ac": "AC-1", "scenario": "add 'a' --tag work --tag home --tag work: file has tags ['work','home'], stdout 'added 1', exit 0. add 'b' with no tag: no 'tags' key."},
+    {"ac": "AC-1", "scenario": "add 'a' --tag Work (and 'a b', 'x_y', '', 'é'): exit 2, stderr is exactly one line containing the value, file does not exist / is unchanged. add 'a' --tag ok --tag BAD stores nothing."},
+    {"ac": "AC-2", "scenario": "add 'a'; tag 1 work -> 'tagged 1', tags ['work']; tag 1 work again exits 0, still one entry; untag 1 work -> 'untagged 1', no 'tags' key."},
+    {"ac": "AC-2", "scenario": "tag 9 work and untag 9 work on a file with only id 1: exit 2, one stderr line, file unchanged. untag 1 home when task has only work: exit 2. tag 1 BAD: exit 2, unchanged."},
+    {"ac": "AC-3", "scenario": "Tasks: 1 'a' tags work,home with due 2026-10-01; 2 'b' no tags. list prints '[ ] 1 a (due 2026-10-01) #work #home' then '[ ] 2 b'. list --tag home prints only task 1."},
+    {"ac": "AC-3", "scenario": "Done task 3 tagged work: list --tag work omits it, list --all --tag work includes it. With TASKLIST_TODAY=2026-10-05, list --overdue --tag work shows only overdue open tasks carrying work. list --tag BAD exits 2 with one stderr line."},
+    {"ac": "AC-4", "scenario": "add 'a' stores priority 'normal'; add 'b' --priority high stores 'high'; add 'c' --priority urgent exits 2, one stderr line naming 'urgent', file unchanged."},
+    {"ac": "AC-5", "scenario": "Tasks 1 low, 2 high, 3 normal, 4 high: list prints order 2, 4, 3, 1; lines for 2 and 4 read '[ ] 2 ! title'; others have no '!'. list --all orders done tasks by the same rule."},
+    {"ac": "AC-5", "scenario": "Overdue tasks 1 (due 2026-10-03, high) and 2 (due 2026-10-01, low), TASKLIST_TODAY=2026-10-05: list --overdue prints 2 then 1, task 1 with '! ' marker."},
+    {"ac": "AC-6", "scenario": "Task 1 'a' due 2026-10-01 tag work, priority normal. edit 1 --title ' b ' changes only title to 'b' (due, tags, priority kept), prints 'edited 1'. edit 1 --due 2026-11-01 changes due only. edit 1 --no-due drops the 'due' key. edit 1 --priority low changes priority only."},
+    {"ac": "AC-6", "scenario": "Each of edit 9 --title x; edit 1 --title '  '; edit 1 --due 2026-13-01; edit 1 --priority urgent; edit 1 (no options); edit 1 --due 2026-11-01 --no-due; edit 1 --title new --priority urgent exits 2 with one stderr line and leaves the file byte-identical."},
+    {"ac": "AC-7", "scenario": "Tasks 1,2,3: remove 2 prints 'removed 2', file holds 1 and 3 with unchanged content; a following add gets id 4. remove 9 exits 2, one stderr line, file unchanged."},
+    {"ac": "AC-8", "scenario": "Hand-written file [{'id':1,'title':'old','done':false},{'id':2,'title':'dated','done':false,'due':'2026-10-01'}]: list prints '[ ] 1 old' and '[ ] 2 dated (due 2026-10-01)' exactly; done 1 leaves task 1 with only id/title/done keys; edit 1 --title new changes only the title; list --overdue and list --tag x work (the latter prints nothing)."}
+  ],
+  "risks": [
+    "Choices where the request was silent: the marker is '! ' with a space; tag/untag/edit print 'tagged ID', 'untagged ID', 'edited ID'; tag on an already-present tag is a no-op exit 0; untag of an absent tag exits 2; edit with no options exits 2; duplicates in repeated --tag are dropped keeping first-seen order; stored priority is written on add, but a missing key reads as normal.",
+    "Error text format 'error: ...' reuses the existing fail() helper; tests should check one-line stderr and the value named, but the exact wording is fixed above for invalid tag, invalid priority, invalid due date and no task with id.",
+    "argparse errors (e.g. --due with --no-due is validated in the handler, not via a mutually exclusive group, to keep stderr to one line; a non-integer ID still gets argparse's usage error with status 2).",
+    "list ordering by priority also applies with --all (done tasks sorted the same way); the request only states it for open tasks.",
+    "A malformed stored value (non-list tags, unknown priority string) in a hand-edited file is not validated beyond treating an unknown priority as normal; out of scope.",
+    "Because list --overdue keeps oldest-due-first, overdue_tasks must not be re-sorted by priority in cli."
+  ],
+  "split_proposal": [
+    "Change 1 (size M): tags. Task.tags, validate_tag, add_task tags param, add --tag, tag/untag commands, list --tag (with --all/--overdue), tag text in format_task, plus tests for AC-1, AC-2, AC-3 and the tag part of AC-8. Branch `organize` from main.",
+    "Change 2 (size S/M): priorities. validate_priority, add --priority, priority-then-id ordering in visible_tasks, '! ' marker in format_task, overdue order untouched, plus tests for AC-4, AC-5 and the priority part of AC-8.",
+    "Change 3 (size M): edit and remove. edit_task, remove_task, edit/remove subcommands, plus tests for AC-6, AC-7 and the edit-on-old-file part of AC-8. Depends on change 2 for --priority validation."
+  ]
+}

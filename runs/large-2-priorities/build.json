@@ -1,0 +1,9 @@
+{
+  "files_changed": ["tasklist/core.py", "tasklist/cli.py"],
+  "summary": "Added PRIORITIES, Task.priority and add_task(priority=) (ValueError on unknown, key stored only for high/low). visible_tasks now sorts by (priority rank, id) for open-only and --all. CLI: add --priority (plain string, validated in cmd_add before load, `error: invalid priority: V`), format_task inserts '! ' for high, bad_priority checks stored values; cmd_list runs it on every task the mode would show (open, all with --all, open for --overdue) before sorting and before the --tag filter.",
+  "acs_addressed": ["AC-1", "AC-2", "AC-3", "AC-4", "AC-5", "AC-6", "AC-7", "AC-8"],
+  "assumptions": [
+    "In cmd_add the priority is validated first, before tags and file load, so no file is created on a bad priority.",
+    "In --overdue mode the priority check runs after the due-date and tags checks; with several faults the first reported is due date, then tags, then priority."
+  ]
+}

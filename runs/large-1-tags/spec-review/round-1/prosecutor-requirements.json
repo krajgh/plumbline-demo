@@ -1,0 +1,18 @@
+{
+  "lens": "requirements",
+  "findings": [
+    {
+      "id": "requirements-1",
+      "lens": "requirements",
+      "file": ".plumbline/runs/183da93-20261005T111543Z/plan.json",
+      "line": 116,
+      "claim": "The spec makes dash-leading tags valid (a lone '-') but no criterion or test says how the CLI receives them, and argparse treats '-x' after --tag as an option, so the 'one stderr line, exit 2' contract is not what the user sees.",
+      "failure_scenario": "`tasklist add X --tag -x` or `tasklist tag 1 -x`: argparse rejects it with a multi-line usage message instead of storing the tag (valid per AC-1) or printing `error: invalid tag: -x`; a build that does this passes every listed test.",
+      "rule": "AC-1, AC-2 (request item 1: dashes are valid; invalid values give one stderr line)",
+      "evidence": "a lone '-' is a valid tag",
+      "outside_code": null,
+      "severity": "MINOR"
+    }
+  ],
+  "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

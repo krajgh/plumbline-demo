@@ -1,0 +1,122 @@
+{
+  "goal": "Add tags to tasklist: add --tag (repeatable), tag and untag commands, list --tag filter, and tags shown in list output. Old task files without tags behave exactly as before.",
+  "non_goals": [
+    "Priorities and priority ordering (part 2; finding spec-review/requirements-1)",
+    "Validating the NAME given to list --tag (an unmatched or odd value just lists nothing)",
+    "Tag renaming, tag listing commands, case folding of tags",
+    "Migrating or rewriting existing task files"
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "statement": "A valid tag matches ^[a-z0-9-]+$ (lowercase ASCII letters, digits, dashes; at least one character). `add TITLE --tag A --tag B` stores the task with \"tags\": [\"A\", \"B\"] in the order given, duplicates dropped (first occurrence kept), prints `added ID`, exits 0. With no --tag the stored task has no \"tags\" key.",
+      "verification": "Tests through cli.main and store.load on a tmp task file; also core.add_task directly."
+    },
+    {
+      "id": "AC-2",
+      "statement": "If any --tag value given to `add` is invalid (including the empty string, uppercase, spaces, underscores, non-ASCII), the command exits 2, writes exactly one stderr line `error: invalid tag: VALUE` (VALUE is the offending value verbatim; for the first invalid value if several), prints nothing on stdout, and the task file is left unchanged (not created if it did not exist), even when other --tag values are valid.",
+      "verification": "Tests with `--tag Work`, `--tag 'a b'`, `--tag a_b`, `--tag ''`, and `--tag ok --tag BAD`; compare capsys err to the exact string, and assert the file content is unchanged."
+    },
+    {
+      "id": "AC-3",
+      "statement": "`tag ID NAME` adds NAME to the task's \"tags\" list (appended), prints `tagged ID`, exits 0. If the task already carries NAME, it exits 0, prints `tagged ID`, and the list is unchanged (no duplicate). An invalid NAME exits 2 with the single stderr line `error: invalid tag: NAME` and the file unchanged. An unknown ID exits 2 with the single stderr line `error: no task with id ID` and the file unchanged. When both the id is unknown and the NAME is invalid, the invalid-tag error is reported.",
+      "verification": "Tests through cli.main: tag a task without tags, tag one with tags, re-tag an existing tag, tag with 'Bad', tag 99 work, tag 99 Bad."
+    },
+    {
+      "id": "AC-4",
+      "statement": "`untag ID NAME` removes NAME from the task's tags, prints `untagged ID`, exits 0; when the list becomes empty the \"tags\" key is deleted from the stored task. If the task does not carry NAME (including a task with no tags), it exits 2 with the single stderr line `error: task ID does not have tag NAME` and the file unchanged. An unknown ID exits 2 with the single stderr line `error: no task with id ID`, file unchanged.",
+      "verification": "Tests through cli.main: untag one of two tags (other remains), untag the last tag (assert no \"tags\" key in stored JSON), untag a missing tag, untag on a task with no tags, untag 99 work."
+    },
+    {
+      "id": "AC-5",
+      "statement": "`list` prints a task with tags as its existing line followed by a space and the tags each prefixed with `#`, space-separated, in stored order, after the due date when there is one: `[ ] 1 Buy milk #work #home` and `[ ] 1 Buy milk (due 2026-10-01) #work #home`. A task without tags (no key, or an empty list) prints exactly as before.",
+      "verification": "Tests through cli.main/capsys with stored tasks having tags with and without due; and a task without tags equals the pre-change line; core/cli.format_task directly."
+    },
+    {
+      "id": "AC-6",
+      "statement": "`list --tag NAME` prints only the tasks whose tags include NAME (exact match), in the same order and format as list would otherwise use. It combines with --all (finished tasks carrying the tag are included) and with --overdue (only overdue tasks carrying the tag). Without --all, finished tasks are still hidden. If nothing matches, it prints nothing and exits 0. The existing --overdue stored-due-date validation and errors are unchanged.",
+      "verification": "Tests with a file of mixed tagged/untagged open and done tasks: list --tag work; list --all --tag work; list --overdue --tag work (with TASKLIST_TODAY set); list --tag nosuch prints empty output and exit 0."
+    },
+    {
+      "id": "AC-7",
+      "statement": "Task files written by earlier versions (no \"tags\" key anywhere) load, list (plain, --all, --overdue), and complete via done exactly as before; the whole existing test suite still passes unchanged. `done` preserves a task's tags in the stored file.",
+      "verification": "The existing tests in tests/ pass; one new test completes a tagged task with done and checks the stored tags remain."
+    },
+    {
+      "id": "AC-8",
+      "statement": "The empty-tag refusal is verified with an exact check (finding spec-review/requirements-2): `add Title --tag ''` exits 2 and captured stderr equals exactly `error: invalid tag: \\n` (not a containment check, which would pass for any message). The same exact-equality check on stderr is used for every other error line in AC-2 to AC-4.",
+      "verification": "Test asserts capsys.readouterr().err == 'error: invalid tag: \\n' for the empty-string case, with .out == ''."
+    }
+  ],
+  "interfaces": [
+    {
+      "name": "core.Task",
+      "file": "tasklist/core.py",
+      "signature": "class Task(TypedDict): ... tags: NotRequired[list[str]]  # absent when none"
+    },
+    {
+      "name": "core.is_valid_tag",
+      "file": "tasklist/core.py",
+      "signature": "def is_valid_tag(name: str) -> bool  # fullmatch [a-z0-9-]+"
+    },
+    {
+      "name": "core.add_task",
+      "file": "tasklist/core.py",
+      "signature": "def add_task(tasks: list[Task], title: str, due: str | None = None, tags: list[str] | None = None) -> Task  # ValueError for a bad tag, before tasks is changed; dedupes in order; no key when empty"
+    },
+    {
+      "name": "core.add_tag",
+      "file": "tasklist/core.py",
+      "signature": "def add_tag(tasks: list[Task], task_id: int, name: str) -> Task  # ValueError for invalid name (checked first), KeyError for unknown id; no-op if present"
+    },
+    {
+      "name": "core.remove_tag",
+      "file": "tasklist/core.py",
+      "signature": "def remove_tag(tasks: list[Task], task_id: int, name: str) -> Task  # KeyError for unknown id, ValueError if the task lacks the tag; deletes the key when empty"
+    },
+    {
+      "name": "core.tagged_tasks",
+      "file": "tasklist/core.py",
+      "signature": "def tagged_tasks(tasks: list[Task], name: str) -> list[Task]  # keeps order; tasks lacking tags are dropped"
+    },
+    {
+      "name": "cli add --tag",
+      "file": "tasklist/cli.py",
+      "signature": "tasklist add TITLE [--due DATE] [--tag NAME ...]  (argparse action=append, dest=tags)"
+    },
+    {
+      "name": "cli tag / untag",
+      "file": "tasklist/cli.py",
+      "signature": "tasklist tag ID NAME ; tasklist untag ID NAME   (ID is int; handlers cmd_tag, cmd_untag(args, path) -> int)"
+    },
+    {
+      "name": "cli list --tag",
+      "file": "tasklist/cli.py",
+      "signature": "tasklist list [--all] [--overdue] [--tag NAME]"
+    },
+    {
+      "name": "cli.format_task",
+      "file": "tasklist/cli.py",
+      "signature": "def format_task(task: core.Task) -> str  # appends ' #a #b' after the due part when tags are present"
+    }
+  ],
+  "test_plan": [
+    {"ac": "AC-1", "scenario": "Empty file; run add 'Pay rent' --tag work --tag home --tag work: stdout 'added 1\\n', exit 0, stored task is {id:1,title:'Pay rent',done:False,tags:['work','home']}. Run add 'Plain' with no --tag: stored task has no 'tags' key. Tag value '2026-q4' (digits and dash) is accepted."},
+    {"ac": "AC-2", "scenario": "On the TASKS fixture file: add X --tag Work -> exit 2, err == 'error: invalid tag: Work\\n', out == '', file content equals the original. Same for 'a b', 'a_b', 'é', and for add X --tag ok --tag BAD (err names BAD; nothing stored). With a nonexistent file path, the file is still not created."},
+    {"ac": "AC-3", "scenario": "Fixture; tag 1 work -> out 'tagged 1\\n', stored task 1 has tags ['work']; tag 1 home -> ['work','home']; tag 1 work again -> exit 0, out 'tagged 1\\n', tags unchanged. tag 1 Bad -> exit 2, err 'error: invalid tag: Bad\\n', file unchanged. tag 99 work -> exit 2, err 'error: no task with id 99\\n', file unchanged. tag 99 Bad -> err 'error: invalid tag: Bad\\n'."},
+    {"ac": "AC-4", "scenario": "Task 1 tagged ['work','home']: untag 1 work -> out 'untagged 1\\n', tags ['home']; untag 1 home -> stored task 1 has no 'tags' key. untag 1 work again (not carried) -> exit 2, err 'error: task 1 does not have tag work\\n', file unchanged. untag 2 work on a task with no tags -> same style error. untag 99 work -> exit 2, err 'error: no task with id 99\\n', file unchanged."},
+    {"ac": "AC-5", "scenario": "Stored tasks: {id1,'Buy milk',tags:['work','home']}, {id2,'Pay',due:'2026-10-01',tags:['work']}, {id3,'Plain'}, {id4,'Empty',tags:[]}. list prints '[ ] 1 Buy milk #work #home', '[ ] 2 Pay (due 2026-10-01) #work', '[ ] 3 Plain', '[ ] 4 Empty' (no trailing space)."},
+    {"ac": "AC-6", "scenario": "Tasks: 1 open tagged work, 2 done tagged work, 3 open tagged home, 4 open untagged, 5 open overdue (due 2026-01-01) tagged work. list --tag work -> tasks 1 and 5 only; list --all --tag work -> 1, 2, 5; with TASKLIST_TODAY=2026-10-05, list --overdue --tag work -> task 5 only; list --tag nosuch -> empty stdout, exit 0; list --tag wor (prefix of work) -> empty."},
+    {"ac": "AC-7", "scenario": "Run the existing tests/test_cli.py, test_core.py, test_store.py unchanged: all pass. Extra: a file with a tagged open task; done 1 -> stored task still has its tags and done True."},
+    {"ac": "AC-8", "scenario": "Fixture file; run add Title --tag '' -> exit 2; capsys err == 'error: invalid tag: \\n' (exact equality, not 'in'), out == ''; file unchanged. Include a deliberately wrong message in a mental check: 'error: invalid tag' without the trailing space must fail this test."}
+  ],
+  "risks": [
+    "Choices where the request was silent, taken from the parent run: tags stored as a JSON list under 'tags', in given order, duplicates dropped, no key when empty; error lines are 'error: invalid tag: VALUE' and 'error: no task with id ID'; tag/untag print 'tagged ID' / 'untagged ID'; re-tagging an existing tag exits 0; untagging a missing tag exits 2.",
+    "My choices: the untag-missing-tag message is 'error: task ID does not have tag NAME'; when both id and name are bad on `tag`, the invalid-tag error wins (name is checked before the lookup); list --tag does not validate NAME.",
+    "Validation uses re.fullmatch with [a-z0-9-], not \\d or $, so non-ASCII digits and a trailing newline ('work\\n') are refused; a lone '-' is a valid tag.",
+    "add must validate all tags before mutating the list, so a failed add leaves both memory and disk untouched; cmd_add currently maps any ValueError to a due-date or title message, so the tag check must be told apart from those (check tags first or use a distinct check) to avoid the wrong message.",
+    "When title, due date and tag are all bad, which error is shown is unspecified; tests should use one bad input at a time.",
+    "A stored 'tags' value that is not a list of strings is not handled (hand-edited files); out of scope."
+  ],
+  "split_proposal": null
+}

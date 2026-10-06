@@ -1,0 +1,45 @@
+{
+  "target": "plan",
+  "round": 1,
+  "lenses": [
+    "requirements"
+  ],
+  "findings": [
+    {
+      "id": "requirements-1",
+      "lens": "requirements",
+      "file": ".plumbline/runs/183da93-20261005T111543Z/plan.json",
+      "line": 116,
+      "claim": "The spec makes dash-leading tags valid (a lone '-') but no criterion or test says how the CLI receives them, and argparse treats '-x' after --tag as an option, so the 'one stderr line, exit 2' contract is not what the user sees.",
+      "failure_scenario": "`tasklist add X --tag -x` or `tasklist tag 1 -x`: argparse rejects it with a multi-line usage message instead of storing the tag (valid per AC-1) or printing `error: invalid tag: -x`; a build that does this passes every listed test.",
+      "rule": "AC-1, AC-2 (request item 1: dashes are valid; invalid values give one stderr line)",
+      "evidence": "a lone '-' is a valid tag",
+      "outside_code": null,
+      "severity": "MINOR",
+      "evidence_unverified": false
+    }
+  ],
+  "defenses": [
+    {
+      "finding_id": "requirements-1",
+      "defender": "screen-1",
+      "verdict": "conceded",
+      "quote": "a lone '-' is a valid tag",
+      "reason": "The spec explicitly states (line 116 of plan.json) that a lone '-' is a valid tag, derived from the AC-1 regex pattern ^[a-z0-9-]+ which includes dash-prefixed values. However, the spec does not address how the CLI receives these values when argparse is used: argparse will intercept any argument starting with '-' as an option flag before the tag validation code can check it. This means the AC-2 contract (\"writes exactly one stderr line error: invalid tag: VALUE\") cannot be met by a standard argparse implementation for dash-prefixed values\u2014argparse will instead produce its multi-line usage message. This represents an inconsistency between the spec's claim about dash validity and the practical limitations of argparse argument parsing, which the spec should address."
+    }
+  ],
+  "survivors": [
+    "requirements-1"
+  ],
+  "gaps": [],
+  "blockers_surviving": 0,
+  "routes": {
+    "builder": [],
+    "test-writer": [],
+    "planner": [
+      "requirements-1"
+    ]
+  },
+  "panel_needed": [],
+  "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

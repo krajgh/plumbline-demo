@@ -1,0 +1,92 @@
+{
+  "goal": "Add a `stats` command to tasklist that prints open/done counts, open counts by priority, the overdue count, and per-tag open counts, optionally limited to one tag.",
+  "non_goals": [
+    "No changes to add, done, tag, untag or list behaviour or output.",
+    "No change to the task file format.",
+    "No JSON or other output formats, no per-tag lines under --tag.",
+    "No validation of the NAME given to --tag (list does not validate it either)."
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "statement": "`tasklist stats` exits 0 and prints on stdout exactly these lines in this order, with no other lines before them: `open: N`, `done: N`, `high: N`, `normal: N`, `low: N`, `overdue: N`. open = tasks with done false; done = tasks with done true; high/normal/low = open tasks by priority (an absent priority is normal); overdue = open tasks whose due date is before today, the same set `list --overdue` shows.",
+      "verification": "Test: a file with mixed open/done tasks of each priority and some due dates; compare stdout to the exact expected six lines."
+    },
+    {
+      "id": "AC-2",
+      "statement": "\"Today\" for overdue comes from the existing cli.today(): $TASKLIST_TODAY if set and non-empty, else the clock. A task due exactly today is not overdue; a done task is never overdue. If TASKLIST_TODAY is set to a non-date, stats exits 2 with one stderr line `error: invalid TASKLIST_TODAY: <value>` and nothing on stdout.",
+      "verification": "Test: TASKLIST_TODAY=2026-10-06 with tasks due 2026-10-05, 2026-10-06, 2026-10-07 (and a done one due 2026-10-01) gives overdue: 1. TASKLIST_TODAY=garbage gives exit 2, empty stdout, one stderr line."
+    },
+    {
+      "id": "AC-3",
+      "statement": "After the six count lines, `stats` prints one line `#tag: N` per distinct tag carried by at least one open task, N = number of open tasks carrying it (a task counts once per tag), ordered by N descending then tag name ascending. Tags carried only by done tasks do not appear. If there are no such tags, nothing follows the six lines.",
+      "verification": "Test: open tasks tagged {b,a}, {b}, {c}, plus a done task tagged z; expected lines after the six: `#b: 2`, `#a: 1`, `#c: 1`."
+    },
+    {
+      "id": "AC-4",
+      "statement": "`tasklist stats --tag NAME` limits every figure (open, done, high, normal, low, overdue) to tasks whose tags include NAME, and prints no per-tag lines. A tag nobody carries yields the six lines all 0.",
+      "verification": "Test: tasks with and without tag `work`, some done, some overdue; `stats --tag work` outputs exactly six lines counting only work tasks. `stats --tag nosuch` gives six zero lines."
+    },
+    {
+      "id": "AC-5",
+      "statement": "An empty task file (`[]`) or a missing task file makes `stats` print the six count lines each with 0 (`open: 0` ... `overdue: 0`), nothing else, and exit 0; the missing file is not created.",
+      "verification": "Test: --file pointing at a nonexistent path and at a file containing `[]`; assert exact stdout, exit 0, and that the missing file still does not exist."
+    },
+    {
+      "id": "AC-6",
+      "statement": "Malformed stored values are reported as `list` reports them: exit 2, exactly one stderr line of the form `error: task <id> ...` naming the first offending task by id (reusing the messages `task <id> has an invalid due date: <value>`, `task <id> has invalid tags: <value!r>`, `task <id> has an invalid priority: <value!r>`), and nothing on stdout. Checked on open tasks, in this order across all of them: due date (not a valid YYYY-MM-DD string, including a non-string), then tags (not a list of strings), then priority (present but not high/normal/low). With --tag NAME, the tags of done tasks are also checked (they decide the done count). Done tasks' due dates and priorities are not checked without --tag, and not at all otherwise.",
+      "verification": "Test per field: an open task 3 with due `2026-13-45`, due `5` (non-string), tags `\"x\"`, tags `[1]`, priority `urgent`, priority `5`; each gives exit 2, empty stdout, a single stderr line containing `task 3`. Also: a done task with a bad tag under `stats --tag x` gives exit 2; a done task with a bad due date under plain `stats` does not."
+    },
+    {
+      "id": "AC-7",
+      "statement": "Task files from earlier versions, whose tasks lack tags, priority and due, are accepted: such an open task counts as normal priority, is never overdue, and contributes no per-tag lines.",
+      "verification": "Test: file `[{\"id\":1,\"title\":\"a\",\"done\":false},{\"id\":2,\"title\":\"b\",\"done\":true}]` gives open: 1, done: 1, high: 0, normal: 1, low: 0, overdue: 0 and no tag lines."
+    },
+    {
+      "id": "AC-8",
+      "statement": "stats never writes the task file, and existing commands and their tests are unaffected. The work is on a new branch `stats` created from main.",
+      "verification": "Test: file bytes unchanged after stats; full existing suite still passes; `git branch --show-current` is `stats`."
+    }
+  ],
+  "interfaces": [
+    {
+      "name": "cmd_stats",
+      "file": "tasklist/cli.py",
+      "signature": "def cmd_stats(args: argparse.Namespace, path: Path) -> int"
+    },
+    {
+      "name": "stats subcommand",
+      "file": "tasklist/cli.py",
+      "signature": "tasklist [--file PATH] stats [--tag NAME]  (registered in build_parser with set_defaults(handler=cmd_stats))"
+    },
+    {
+      "name": "task_stats",
+      "file": "tasklist/core.py",
+      "signature": "def task_stats(tasks: list[Task], today: datetime.date, tag: str | None = None) -> tuple[dict[str, int], dict[str, int]]  # (counts keyed open/done/high/normal/low/overdue, per-tag open counts); inputs must already be validated by the CLI; per-tag dict is empty when tag is given"
+    }
+  ],
+  "test_plan": [
+    {"ac": "AC-1", "scenario": "Tasks: 1 open high due 2026-10-01; 2 open (no priority); 3 open low; 4 done high; TASKLIST_TODAY=2026-10-06. stats prints `open: 3`, `done: 1`, `high: 1`, `normal: 1`, `low: 1`, `overdue: 1`, exit 0."},
+    {"ac": "AC-1", "scenario": "Overdue agrees with `list --overdue`: for the same file and TASKLIST_TODAY, the overdue figure equals the number of lines `list --overdue` prints."},
+    {"ac": "AC-2", "scenario": "TASKLIST_TODAY=2026-10-06; due 2026-10-05, 2026-10-06, 2026-10-07 and a done task due 2026-10-01: overdue: 1."},
+    {"ac": "AC-2", "scenario": "TASKLIST_TODAY=garbage: exit 2, stdout empty, stderr is one line `error: invalid TASKLIST_TODAY: garbage`."},
+    {"ac": "AC-3", "scenario": "Open tasks tagged [b,a], [b], [c]; done task tagged [z]: lines after the six are `#b: 2`, `#a: 1`, `#c: 1`."},
+    {"ac": "AC-3", "scenario": "No open task has tags: output is exactly six lines."},
+    {"ac": "AC-4", "scenario": "Tasks: open work+high overdue, open work, done work, open home high, open untagged; `stats --tag work` prints six lines counting only the three work tasks and no `#` lines."},
+    {"ac": "AC-4", "scenario": "`stats --tag nosuch` prints six lines all `: 0`, exit 0."},
+    {"ac": "AC-5", "scenario": "--file missing.json (nonexistent): six zero lines, exit 0, file not created. Same for a file containing `[]`."},
+    {"ac": "AC-6", "scenario": "Open task 3 with due `2026-13-45`: exit 2, empty stdout, one stderr line naming `task 3`. Repeat with due `5`, tags `\"x\"`, tags `[1]`, priority `urgent`, priority `5`."},
+    {"ac": "AC-6", "scenario": "Done task 2 with tags `\"x\"`: plain `stats` exits 0; `stats --tag x` exits 2 naming task 2. A done task with due `bad` and priority `urgent`: plain `stats` exits 0."},
+    {"ac": "AC-6", "scenario": "Task 1 has bad priority and task 2 has bad due date (both open): the error names task 2 (due is checked before priority)."},
+    {"ac": "AC-7", "scenario": "Legacy file with two bare tasks (one open, one done): `open: 1`, `done: 1`, `high: 0`, `normal: 1`, `low: 0`, `overdue: 0`, no tag lines."},
+    {"ac": "AC-8", "scenario": "Read the task file bytes before and after `stats`: identical. Run the whole existing test suite: passes."}
+  ],
+  "risks": [
+    "Request is silent on which tasks are validated; chose open tasks always (due, tags, priority, mirroring list --overdue's order), plus done tasks' tags only under --tag since they feed the filtered done count. Done tasks' due/priority are never inspected.",
+    "A bad TASKLIST_TODAY is an error even when no task has a due date (stats always computes today), reported like `list --overdue` does.",
+    "A duplicated tag inside one task's stored list counts once for that task.",
+    "--tag NAME is not validated as a tag name; an odd name simply matches nothing, as in list.",
+    "Overdue should reuse core.overdue_tasks semantics (parse_date(due) < today) so it cannot drift from list --overdue."
+  ],
+  "split_proposal": null
+}

@@ -1,0 +1,118 @@
+{
+  "commit": "0f44eee10f72bc1ea1d8357496880fd5a749eff2",
+  "run_id": "a061f09-20261005T135022Z",
+  "row": "code.M",
+  "stages": [
+    {
+      "id": "intake",
+      "record": ".plumbline/runs/a061f09-20261005T135022Z/intake.json",
+      "gate": null,
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "plan",
+      "record": ".plumbline/runs/a061f09-20261005T135022Z/plan.json",
+      "gate": "spec_complete",
+      "passed": true,
+      "rounds": 2
+    },
+    {
+      "id": "spec-review",
+      "record": ".plumbline/runs/a061f09-20261005T135022Z/spec-review.json",
+      "gate": "no_surviving_blockers",
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "tests",
+      "record": ".plumbline/runs/a061f09-20261005T135022Z/tests.json",
+      "gate": "tests_fail_on_stub",
+      "passed": true,
+      "rounds": 4
+    },
+    {
+      "id": "test-review",
+      "record": ".plumbline/runs/a061f09-20261005T135022Z/test-review.json",
+      "gate": "no_surviving_blockers",
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "build",
+      "record": ".plumbline/runs/a061f09-20261005T135022Z/build.json",
+      "gate": null,
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "verify",
+      "record": ".plumbline/runs/a061f09-20261005T135022Z/verify.json",
+      "gate": "verify_green",
+      "passed": true,
+      "rounds": 2
+    },
+    {
+      "id": "review",
+      "record": ".plumbline/runs/a061f09-20261005T135022Z/review.json",
+      "gate": "no_surviving_blockers",
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "reduce",
+      "record": ".plumbline/runs/a061f09-20261005T135022Z/reduce.json",
+      "gate": "all_gates_passed",
+      "passed": true,
+      "rounds": 1
+    }
+  ],
+  "tokens": {
+    "by_model": {
+      "claude-haiku-4-5-20251001": {
+        "output": 22558,
+        "fresh_input": 111385,
+        "cache_read": 1020741,
+        "output_lower_bound": 22
+      },
+      "claude-sonnet-5-5": {
+        "output": 19003,
+        "fresh_input": 357350,
+        "cache_read": 1554115,
+        "output_lower_bound": 73
+      }
+    },
+    "orchestration": {
+      "claude-sonnet-5-5": {
+        "output": 2004,
+        "fresh_input": 144010,
+        "cache_read": 1792596,
+        "output_lower_bound": 60
+      }
+    }
+  },
+  "verdict": "pass",
+  "notes": [
+    "declared row code.M, measured row code.M",
+    "the output tokens of claude-haiku-4-5-20251001 are a lower bound: 22 messages had no final usage entry, only the snapshot taken as a message starts",
+    "the output tokens of claude-sonnet-5-5 are a lower bound: 73 messages had no final usage entry, only the snapshot taken as a message starts",
+    "the output tokens of claude-sonnet-5-5 (orchestration) are a lower bound: 60 messages had no final usage entry, only the snapshot taken as a message starts"
+  ],
+  "open_findings": [],
+  "gaps": [
+    {
+      "stage": "review",
+      "id": "G-1",
+      "kind": "missing_test",
+      "detail": "No test checks that a bad stored priority on a done task is reported by `list --all --tag X` (AC-8: with --all the check covers done tasks, before the --tag filter). Only plain `list --all` is tested for done tasks (test_ac8_malformed_priority_on_a_done_task_is_reported_by_list_all in tests/test_priority.py). Add a case with a done task of bad priority that lacks tag X and assert exit 2 with the by-id stderr.",
+      "ac": "AC-8"
+    },
+    {
+      "stage": "review",
+      "id": "G-2",
+      "kind": "missing_test",
+      "detail": "No test combines `add --priority high` with `--due` and `--tag` and checks that the stored task keeps all of due, tags and priority together. Add one in tests/test_priority.py.",
+      "ac": "AC-1"
+    }
+  ]
+}

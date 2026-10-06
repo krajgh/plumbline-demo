@@ -1,0 +1,34 @@
+{
+  "defender": "screen-1",
+  "defenses": [
+    {
+      "finding_id": "correctness-1",
+      "defender": "screen-1",
+      "verdict": "refuted",
+      "quote": "assert run(path, \"untag\", \"1\", \"--\", \"-\") == 0",
+      "reason": "Test line 226 in tests/test_tags.py demonstrates that dash-leading tags ARE supported for the tag/untag positional NAME argument via the standard argparse convention of using '--' to separate options from positional arguments. The test confirms this works correctly: tags like '-work' and '-' can be passed to untag and tag commands with '--' separator, which is standard POSIX argument parsing behavior that argparse implements. The code correctly implements this standard convention."
+    },
+    {
+      "finding_id": "tests-1",
+      "defender": "screen-1",
+      "verdict": "conceded",
+      "quote": "([\"-{}-overdue\", \"--tag\", \"work\"], [\"5\"])",
+      "reason": "The test at line 189 for AC-6's --overdue --tag combination only uses valid due dates (task 5 has due '2026-01-01'). The finding correctly identifies that testing with an invalid due date in combination with --tag filtering is missing. However, the current code is correct: cmd_list() validates all open task due dates (lines 124-128) before applying the tag filter (line 139), so due-date validation errors are unchanged regardless of --tag use. This is a test gap for an edge case, not a code bug. Severity MINOR is appropriate."
+    },
+    {
+      "finding_id": "data-1",
+      "defender": "screen-1",
+      "verdict": "refuted",
+      "quote": "task[\"tags\"] = list(dict.fromkeys(tags))",
+      "reason": "Line 54 in tasklist/core.py shows that add_task() actively prevents duplicate tags from being stored by using dict.fromkeys(), which deduplicates the input list. Since the code does not create duplicate tags, and the spec explicitly states that hand-edited files with malformed stored data are out of scope (risks section), the scenario described in the finding (a stored list with duplicate tags) cannot occur through normal operation. Therefore, the behavior of list.remove() only removing the first occurrence is not a practical issue."
+    },
+    {
+      "finding_id": "boundaries-1",
+      "defender": "screen-1",
+      "verdict": "refuted",
+      "quote": "assert run(path, \"untag\", \"1\", \"--\", \"-\") == 0",
+      "reason": "Test line 226 in tests/test_tags.py confirms that dash-leading tags CAN be given as the positional NAME argument to tag/untag commands using the standard '--' separator syntax. The test explicitly verifies this works: 'tasklist untag 1 -- -work' successfully untaggs, demonstrating the code correctly implements argparse's standard convention for passing positional arguments beginning with '-'. This is expected behavior, not a boundary violation."
+    }
+  ],
+  "diff_sha256": "c1cc5b9e8f60857af3e3e6f3e5f9b645ef76af85a87b92c202d9a628f682f203"
+}

@@ -1,0 +1,13 @@
+{
+  "defender": "screen-1",
+  "defenses": [
+    {
+      "finding_id": "tests-1",
+      "defender": "screen-1",
+      "verdict": "conceded",
+      "quote": "path = write(tmp_path, [t(1), t(2, True, due=\"bad\", priority=\"urgent\")])\n    assert stats(path, capsys)[0] == 0",
+      "reason": "The test at line 132-133 of tests/test_stats.py verifies that plain `stats` with a done task containing bad due date and priority exits 0, demonstrating that these fields are not validated. However, there is no corresponding test for `stats --tag x` with such a done task, leaving a gap in coverage. AC-6 states done tasks' due dates and priorities should not be checked 'not at all otherwise' (never, even with --tag), but the test suite does not explicitly verify this behavior under the --tag flag. The implementation correctly ignores done task due/priority even with --tag, but the test coverage for this scenario is absent."
+    }
+  ],
+  "diff_sha256": "a4be3a84d8d31640f73d293231d1857c09e256f4fe4ec88544e1b1f8d3545577"
+}

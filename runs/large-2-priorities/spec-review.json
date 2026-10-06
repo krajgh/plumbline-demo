@@ -1,0 +1,19 @@
+{
+  "target": "plan",
+  "round": 1,
+  "lenses": [
+    "requirements"
+  ],
+  "findings": [],
+  "defenses": [],
+  "survivors": [],
+  "gaps": [],
+  "blockers_surviving": 0,
+  "routes": {
+    "builder": [],
+    "test-writer": [],
+    "planner": []
+  },
+  "panel_needed": [],
+  "diff_sha256": "ecb450e477fab8ba0da26542f7be38d7902168aad6e2d5ab47622c53c55d4a67"
+}

@@ -1,0 +1,5 @@
+{"gaps": [
+{"id": "G-1", "kind": "missing_test", "detail": "parse_date in tasklist/core.py gained an isinstance(text, str) guard but no unit test calls parse_date directly with a non-string (None, int) to check it raises ValueError; only the CLI path is tested. Add a test in the core tests.", "ac": "AC-1"},
+{"id": "G-2", "kind": "edge_case", "detail": "Only None and an int are tested. Other non-string JSON values (bool true/false, list, dict, float) are handled by the same guard but not exercised; a test parametrized with e.g. True, [], {}, 1.5 would pin the message format (str(value) differs from the stored JSON, e.g. None vs null, True vs true).", "ac": "AC-1"},
+{"id": "G-3", "kind": "edge_case", "detail": "A done task with a non-string due is skipped by the check in cmd_list (not task['done']); no test confirms that list --overdue exits 0 for a done task with due null, nor that a non-string due on a done task does not crash overdue_tasks.", "ac": "AC-1"}
+], "diff_sha256": "8af60b07775a91f695d6a34c539cdfcb5147b76ebc3230bb13bc013c76f40bbf"}

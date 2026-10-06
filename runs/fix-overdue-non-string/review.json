@@ -1,0 +1,65 @@
+{
+  "target": "diff",
+  "round": 1,
+  "lenses": [
+    "correctness",
+    "tests"
+  ],
+  "findings": [
+    {
+      "id": "tests-1",
+      "lens": "tests",
+      "file": "tests/test_cli.py",
+      "line": 278,
+      "claim": "The id assertion is a bare substring check that cannot tell the task id from other text in the line, and the null case only checks for the Python repr 'None', not the stored null.",
+      "failure_scenario": "A message such as 'task None has an invalid due date: 7' or one that prints the wrong id would still pass because only the substrings '7' and str(bad) are checked; the other task ids are never varied.",
+      "rule": "AC-1",
+      "evidence": "assert \"7\" in lines[0] and str(bad) in lines[0]",
+      "outside_code": null,
+      "severity": "MINOR",
+      "evidence_unverified": false
+    }
+  ],
+  "defenses": [
+    {
+      "finding_id": "tests-1",
+      "defender": "screen-1",
+      "verdict": "conceded",
+      "quote": "assert \"7\" in lines[0] and str(bad) in lines[0]",
+      "reason": "The test does use bare substring checks as the finding claims. The assertion cannot distinguish whether \"7\" is the task id or incidental text in the message. However, the actual implementation in cli.py formats the error message as \"task {id} has an invalid due date: {value}\" (from line 80: fail(f\"task {task['id']} has an invalid due date: {task['due']}\")), so the substrings appear in their correct positions and the test adequately verifies AC-1 despite its loose assertion pattern."
+    }
+  ],
+  "survivors": [
+    "tests-1"
+  ],
+  "gaps": [
+    {
+      "id": "G-1",
+      "kind": "missing_test",
+      "detail": "parse_date in tasklist/core.py gained an isinstance(text, str) guard but no unit test calls parse_date directly with a non-string (None, int) to check it raises ValueError; only the CLI path is tested. Add a test in the core tests.",
+      "ac": "AC-1"
+    },
+    {
+      "id": "G-2",
+      "kind": "edge_case",
+      "detail": "Only None and an int are tested. Other non-string JSON values (bool true/false, list, dict, float) are handled by the same guard but not exercised; a test parametrized with e.g. True, [], {}, 1.5 would pin the message format (str(value) differs from the stored JSON, e.g. None vs null, True vs true).",
+      "ac": "AC-1"
+    },
+    {
+      "id": "G-3",
+      "kind": "edge_case",
+      "detail": "A done task with a non-string due is skipped by the check in cmd_list (not task['done']); no test confirms that list --overdue exits 0 for a done task with due null, nor that a non-string due on a done task does not crash overdue_tasks.",
+      "ac": "AC-1"
+    }
+  ],
+  "blockers_surviving": 0,
+  "routes": {
+    "builder": [],
+    "test-writer": [
+      "tests-1"
+    ],
+    "planner": []
+  },
+  "panel_needed": [],
+  "diff_sha256": "8af60b07775a91f695d6a34c539cdfcb5147b76ebc3230bb13bc013c76f40bbf"
+}

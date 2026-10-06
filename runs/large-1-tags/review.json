@@ -1,0 +1,134 @@
+{
+  "target": "diff",
+  "round": 1,
+  "lenses": [
+    "correctness",
+    "tests",
+    "security",
+    "data",
+    "boundaries"
+  ],
+  "findings": [
+    {
+      "id": "correctness-1",
+      "lens": "correctness",
+      "file": "tasklist/cli.py",
+      "line": 169,
+      "claim": "A valid tag that starts with a dash (for example '-work' or '-') cannot be passed to tag/untag or as a separate --tag argument, because argparse reads it as an option.",
+      "failure_scenario": "`tasklist tag 1 -work` exits 2 with an argparse usage error instead of tagging, although AC-1 makes '-work' a valid tag; `add X --tag -a` fails the same way. Only `--` or `--tag=-a` works.",
+      "rule": "AC-1, AC-3 (valid tags match ^[a-z0-9-]+$)",
+      "evidence": "sub.add_argument(\"name\", metavar=\"NAME\", help=\"tag name\")",
+      "outside_code": "Python argparse: arguments starting with '-' that are not negative numbers are parsed as options.",
+      "severity": "MINOR",
+      "evidence_unverified": false
+    },
+    {
+      "id": "tests-1",
+      "lens": "tests",
+      "file": "tests/test_tags.py",
+      "line": 189,
+      "claim": "AC-6's clause that the --overdue stored-due-date validation and errors are unchanged is not tested in combination with --tag, nor is the interplay of the new tag check with the due-date check on the --overdue path.",
+      "failure_scenario": "A change that applies the tag filter or bad_tags check before the due-date validation, or skips due validation when --tag is given, changes the error for a file with an invalid due date and still passes every test in test_tags.py (the --overdue --tag case only uses valid dates).",
+      "rule": "AC-6",
+      "evidence": "([\"--overdue\", \"--tag\", \"work\"], [\"5\"]),",
+      "outside_code": null,
+      "severity": "MINOR",
+      "evidence_unverified": false
+    },
+    {
+      "id": "data-1",
+      "lens": "data",
+      "file": "tasklist/core.py",
+      "line": 81,
+      "claim": "remove_tag removes only the first occurrence, so a stored list with a duplicate tag keeps the tag after a successful untag.",
+      "failure_scenario": "A hand-edited or older file has \"tags\": [\"work\",\"work\"]; `untag 1 work` prints `untagged 1`, exits 0, but the task still carries work and still matches `list --tag work`.",
+      "rule": "AC-4",
+      "evidence": "task[\"tags\"].remove(name)",
+      "outside_code": null,
+      "severity": "MINOR",
+      "evidence_unverified": false
+    },
+    {
+      "id": "boundaries-1",
+      "lens": "boundaries",
+      "file": "tasklist/cli.py",
+      "line": 169,
+      "claim": "A valid tag that starts with a dash (allowed by [a-z0-9-]+) cannot be given as the positional NAME of tag/untag, because argparse treats it as an option.",
+      "failure_scenario": "`tasklist tag 1 -urgent` exits 2 with argparse usage text instead of tagging, although `-urgent` is a valid tag under AC-1/AC-3; likewise `untag 1 -urgent` and `list --tag -urgent` cannot remove or filter a tag that `add --tag=-urgent` stored. The error is not the specified `error: ...` line.",
+      "rule": "AC-3",
+      "evidence": "sub.add_argument(\"name\", metavar=\"NAME\", help=\"tag name\")",
+      "outside_code": "argparse: arguments beginning with '-' are parsed as options unless preceded by '--'.",
+      "severity": "MINOR",
+      "evidence_unverified": false
+    }
+  ],
+  "defenses": [
+    {
+      "finding_id": "correctness-1",
+      "defender": "screen-1",
+      "verdict": "refuted",
+      "quote": "assert run(path, \"untag\", \"1\", \"--\", \"-\") == 0",
+      "reason": "Test line 226 in tests/test_tags.py demonstrates that dash-leading tags ARE supported for the tag/untag positional NAME argument via the standard argparse convention of using '--' to separate options from positional arguments. The test confirms this works correctly: tags like '-work' and '-' can be passed to untag and tag commands with '--' separator, which is standard POSIX argument parsing behavior that argparse implements. The code correctly implements this standard convention."
+    },
+    {
+      "finding_id": "tests-1",
+      "defender": "screen-1",
+      "verdict": "conceded",
+      "quote": "([\"-{}-overdue\", \"--tag\", \"work\"], [\"5\"])",
+      "reason": "The test at line 189 for AC-6's --overdue --tag combination only uses valid due dates (task 5 has due '2026-01-01'). The finding correctly identifies that testing with an invalid due date in combination with --tag filtering is missing. However, the current code is correct: cmd_list() validates all open task due dates (lines 124-128) before applying the tag filter (line 139), so due-date validation errors are unchanged regardless of --tag use. This is a test gap for an edge case, not a code bug. Severity MINOR is appropriate."
+    },
+    {
+      "finding_id": "data-1",
+      "defender": "screen-1",
+      "verdict": "refuted",
+      "quote": "task[\"tags\"] = list(dict.fromkeys(tags))",
+      "reason": "Line 54 in tasklist/core.py shows that add_task() actively prevents duplicate tags from being stored by using dict.fromkeys(), which deduplicates the input list. Since the code does not create duplicate tags, and the spec explicitly states that hand-edited files with malformed stored data are out of scope (risks section), the scenario described in the finding (a stored list with duplicate tags) cannot occur through normal operation. Therefore, the behavior of list.remove() only removing the first occurrence is not a practical issue."
+    },
+    {
+      "finding_id": "boundaries-1",
+      "defender": "screen-1",
+      "verdict": "refuted",
+      "quote": "assert run(path, \"untag\", \"1\", \"--\", \"-\") == 0",
+      "reason": "Test line 226 in tests/test_tags.py confirms that dash-leading tags CAN be given as the positional NAME argument to tag/untag commands using the standard '--' separator syntax. The test explicitly verifies this works: 'tasklist untag 1 -- -work' successfully untaggs, demonstrating the code correctly implements argparse's standard convention for passing positional arguments beginning with '-'. This is expected behavior, not a boundary violation."
+    }
+  ],
+  "survivors": [
+    "tests-1"
+  ],
+  "gaps": [
+    {
+      "id": "G-1",
+      "kind": "missing_test",
+      "detail": "No test lists a finished task carrying tags: list --all should print '[x] 2 Two #work'. Add a test in tests/test_tags.py (list --all on MIXED, or cli.format_task directly with done True and tags, with and without due), since AC-5 verification names format_task directly and no test calls it.",
+      "ac": "AC-5"
+    },
+    {
+      "id": "G-2",
+      "kind": "edge_case",
+      "detail": "core.remove_tag removes only the first occurrence via list.remove. A hand-edited stored task with duplicate tags (['a','a']) keeps 'a' after untag and the tags key survives, so untag then succeeds a second time. Remove all occurrences (list comprehension) or add a test fixing the behaviour in tests/test_tags.py and tasklist/core.py.",
+      "ac": "AC-4"
+    },
+    {
+      "id": "G-3",
+      "kind": "missing_test",
+      "detail": "No test covers list --overdue combined with tags on a done tagged task or --all with --overdue, and none covers the check order in cmd_list --overdue (an invalid stored due date on one task together with malformed tags on another: which error wins). Add a test pinning the order in cmd_list, as AC-6 says the existing --overdue validation errors are unchanged.",
+      "ac": "AC-6"
+    },
+    {
+      "id": "G-4",
+      "kind": "edge_case",
+      "detail": "cmd_add validates tags before the title and due date, so add '' --tag Bad or add X --due nope --tag Bad reports the tag error; the spec leaves the order unspecified and no test pins it. Add a test in tests/test_tags.py documenting the chosen order for blank title and bad due combined with a bad tag, or set the order explicitly in tasklist/cli.py cmd_add.",
+      "ac": "AC-2"
+    }
+  ],
+  "blockers_surviving": 0,
+  "routes": {
+    "builder": [],
+    "test-writer": [
+      "tests-1"
+    ],
+    "planner": []
+  },
+  "panel_needed": [],
+  "diff_sha256": "c1cc5b9e8f60857af3e3e6f3e5f9b645ef76af85a87b92c202d9a628f682f203"
+}

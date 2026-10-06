@@ -1,0 +1,20 @@
+{
+  "defender": "screen-1",
+  "defenses": [
+    {
+      "finding_id": "tests-1",
+      "defender": "screen-1",
+      "verdict": "conceded",
+      "quote": "t(1, tags=[\"b\", \"a\"]), t(2, tags=[\"b\"]), t(3, tags=[\"c\"]), t(4, True, tags=[\"z\"])",
+      "reason": "The test file has no task with duplicated tags like [\"a\", \"a\"]. All tested tag lists have distinct tags within each task. The code in task_stats (line 144: `for name in set(task.get(\"tags\", []))`) does use set() to deduplicate, which implements the \"a task counts once per tag\" rule, but this specific behavior is not tested. This is a test coverage gap for an edge case."
+    },
+    {
+      "finding_id": "tests-2",
+      "defender": "screen-1",
+      "verdict": "conceded",
+      "quote": "def test_ac6_due_checked_before_priority(tmp_path, capsys):\n    path = write(tmp_path, [t(1, priority=\"urgent\"), t(2, due=\"2026-13-45\")])\n    status, out, err = stats(path, capsys)\n    assert (status, out) == (2, \"\")\n    assert err.startswith(\"error: task 2 \")",
+      "reason": "Only the due-before-priority ordering is tested. There are no tests verifying the due-before-tags or tags-before-priority orderings specified in AC-6. The code in cmd_stats (line 177) does check in the correct order (`bad_tags() or bad_priority()` after checking due dates), but not all orderings are tested. This is a test coverage gap."
+    }
+  ],
+  "diff_sha256": "88cd2e34c627c35c4f82b4e85530a4f8cf4c17875a946323cc60a0f12164eb57"
+}

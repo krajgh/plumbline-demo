@@ -1,0 +1,94 @@
+{
+  "goal": "Add `edit ID` (change title, due date, or priority; only the given fields) and `remove ID` to tasklist, keeping older task files working.",
+  "non_goals": [
+    "No editing of tags, done state or id (tag/untag/done remain the way).",
+    "No renumbering of ids after remove.",
+    "No new storage format or migration; no change to add, list, done, tag, untag behaviour.",
+    "No confirmation prompt or undo for remove."
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "statement": "`edit ID --title T` sets the task's title to T stripped of surrounding whitespace, prints `edited ID` on stdout and exits 0. All other keys of the task (id, done, due, tags, priority) and all other tasks are unchanged. A blank/whitespace-only title exits 2 with one stderr line `error: title must not be empty` and changes nothing.",
+      "verification": "CLI tests with a temp --file: edit a task with tags, due and priority; compare the stored JSON before and after; blank title case checks exit 2, stderr, and file unchanged."
+    },
+    {
+      "id": "AC-2",
+      "statement": "`edit ID --due DATE` with a valid strict YYYY-MM-DD date (core.parse_date) sets the task's \"due\" key; `edit ID --no-due` deletes the \"due\" key (no error if the task had none; it prints `edited ID`). An invalid date exits 2 with `error: invalid due date: VALUE` and changes nothing. `--due` together with `--no-due` exits 2 with a single `error: ...` line on stderr and changes nothing.",
+      "verification": "CLI tests: set due on a task without one, replace an existing one, --no-due on a task with and without due (key absent afterwards), --due 2026-13-45 / --due 'abc' exit 2, --due with --no-due exit 2; file unchanged on failures."
+    },
+    {
+      "id": "AC-3",
+      "statement": "`edit ID --priority LEVEL` validates LEVEL against core.PRIORITIES. `high` or `low` sets the \"priority\" key to that value; `normal` deletes the \"priority\" key (no error if absent). An invalid level exits 2 with `error: invalid priority: VALUE` and changes nothing. Success prints `edited ID`.",
+      "verification": "CLI tests: set high, set low, normal removes the key from a high task, normal on a task without the key leaves no key, `--priority urgent` exits 2 with the exact stderr and file unchanged."
+    },
+    {
+      "id": "AC-4",
+      "statement": "`edit` with no field option (none of --title, --due, --no-due, --priority) exits 2 with one `error: ...` line on stderr and changes nothing. An unknown ID exits 2 with `error: no task with id ID` and changes nothing (an unknown id is reported before value errors). Every value is validated before anything is changed: e.g. a valid --title with an invalid --due or --priority changes neither field. A bad `--priority` or `--due` next to a good one never leaves a partial edit saved.",
+      "verification": "CLI tests: `edit 1` alone; `edit 99 --title x`; `edit 1 --title New --priority urgent` and `edit 1 --title New --due nope` leave the file byte-identical, exit 2. Core test that edit_task raises before mutating."
+    },
+    {
+      "id": "AC-5",
+      "statement": "`remove ID` deletes the task with that id from the file, prints `removed ID` and exits 0; the remaining tasks keep their ids and order, and a later `add` gets max id + 1 of the remaining tasks (no renumbering). An unknown ID exits 2 with `error: no task with id ID` and the file is unchanged.",
+      "verification": "CLI tests: file with ids 1,2,3; remove 2 -> stdout `removed 2`, file has ids 1,3; then add gives id 4; remove 9 exits 2 with exact stderr, file unchanged. Core test for remove_task."
+    },
+    {
+      "id": "AC-6",
+      "statement": "A task file written by an earlier version (tasks with only id, title, done, and optionally due; no tags or priority keys) still loads, lists, completes and edits as before; `edit` adds only the keys it was asked to change (e.g. `edit --title` adds no \"tags\" or \"priority\" key; `edit --priority normal` adds no \"priority\" key; `edit --no-due` adds no key).",
+      "verification": "CLI test: hand-write a legacy JSON file, run list, done, edit --title; assert stored task dicts have exactly the original keys plus the changed one."
+    }
+  ],
+  "interfaces": [
+    {
+      "name": "edit_task",
+      "file": "tasklist/core.py",
+      "signature": "def edit_task(tasks: list[Task], task_id: int, title: str | None = None, due: str | None = None, no_due: bool = False, priority: str | None = None) -> Task  # KeyError if no such id; ValueError (blank title, bad date, bad priority, due with no_due) raised before any change; strips title; priority 'normal' deletes the key; no_due deletes 'due'"
+    },
+    {
+      "name": "remove_task",
+      "file": "tasklist/core.py",
+      "signature": "def remove_task(tasks: list[Task], task_id: int) -> Task  # removes and returns the task; KeyError if no such id"
+    },
+    {
+      "name": "cmd_edit",
+      "file": "tasklist/cli.py",
+      "signature": "def cmd_edit(args: argparse.Namespace, path: Path) -> int  # prints `edited ID`; errors via fail()"
+    },
+    {
+      "name": "cmd_remove",
+      "file": "tasklist/cli.py",
+      "signature": "def cmd_remove(args: argparse.Namespace, path: Path) -> int  # prints `removed ID`; errors via fail()"
+    },
+    {
+      "name": "edit subcommand",
+      "file": "tasklist/cli.py",
+      "signature": "tasklist edit ID [--title TITLE] [--due DATE | --no-due] [--priority LEVEL]   (ID is int)"
+    },
+    {
+      "name": "remove subcommand",
+      "file": "tasklist/cli.py",
+      "signature": "tasklist remove ID   (ID is int)"
+    }
+  ],
+  "test_plan": [
+    {"ac": "AC-1", "scenario": "File: task 1 {title 'a', done true, due '2026-10-01', tags ['x'], priority 'high'}. `edit 1 --title '  New  '` -> stdout 'edited 1', exit 0; stored title 'New', every other key and value identical."},
+    {"ac": "AC-1", "scenario": "`edit 1 --title '   '` -> exit 2, stderr exactly 'error: title must not be empty', file unchanged."},
+    {"ac": "AC-2", "scenario": "Task without due: `edit 1 --due 2026-12-01` sets due. Then `edit 1 --no-due` removes the key. `edit 1 --no-due` again exits 0 and the key stays absent."},
+    {"ac": "AC-2", "scenario": "`edit 1 --due 2026-02-30` -> exit 2, stderr 'error: invalid due date: 2026-02-30', file unchanged. `edit 1 --due 2026-12-01 --no-due` -> exit 2, one 'error: ' line, file unchanged."},
+    {"ac": "AC-3", "scenario": "`edit 1 --priority high` sets 'high'; `--priority low` sets 'low'; `--priority normal` removes the key; `--priority normal` on a task lacking the key leaves it absent."},
+    {"ac": "AC-3", "scenario": "`edit 1 --priority urgent` -> exit 2, stderr 'error: invalid priority: urgent', file unchanged."},
+    {"ac": "AC-4", "scenario": "`edit 1` with no options -> exit 2, one 'error: ' line, file unchanged. `edit 99 --title x` -> exit 2, 'error: no task with id 99'."},
+    {"ac": "AC-4", "scenario": "`edit 1 --title New --priority urgent` and `edit 1 --title New --due nope` -> exit 2 and file unchanged (title not applied)."},
+    {"ac": "AC-5", "scenario": "Tasks 1,2,3: `remove 2` -> stdout 'removed 2'; list --all shows 1 and 3 with original ids; `add z` then prints 'added 4'. Removing the highest id 3 first then adding gives 3 (max+1)."},
+    {"ac": "AC-5", "scenario": "`remove 9` on a file without id 9 -> exit 2, stderr 'error: no task with id 9', file unchanged."},
+    {"ac": "AC-6", "scenario": "Legacy file [{\"id\":1,\"title\":\"a\",\"done\":false}]: list prints '[ ] 1 a'; `edit 1 --title b` leaves keys exactly {id,title,done}; `edit 1 --priority normal` and `edit 1 --no-due` also leave them unchanged in key set; `done 1` still works."}
+  ],
+  "risks": [
+    "Choices where the request was silent: the no-field-option message is `error: nothing to edit`; the --due with --no-due message is `error: --due and --no-due cannot be used together`; the blank title message is the existing `error: title must not be empty`. Tests should assert exit 2 and a single `error: ` line for the first two, exact text for the rest.",
+    "Order of checks: unknown id first, then no-field, then value validity; all before any mutation. If several values are bad, which message shows is unspecified beyond exit 2 and no change.",
+    "Edit does not validate other stored data (tags, other tasks' priority); only the edited fields. Legacy hand-edited files with bad stored values elsewhere are not this change's concern.",
+    "argparse errors (non-integer ID) exit 2 on their own; --due/--no-due may be checked in cmd_edit rather than via a mutually exclusive group, either is acceptable if exit is 2 with an `error:` line.",
+    "README may need a short mention of edit/remove; optional."
+  ],
+  "split_proposal": null
+}

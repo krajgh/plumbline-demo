@@ -1,0 +1,163 @@
+{
+  "commit": "a061f09ed7d83184e4fec5ef4874ed38acb00772",
+  "run_id": "183da93-20261005T111543Z",
+  "row": "code.M",
+  "stages": [
+    {
+      "id": "intake",
+      "record": ".plumbline/runs/183da93-20261005T111543Z/intake.json",
+      "gate": null,
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "plan",
+      "record": ".plumbline/runs/183da93-20261005T111543Z/plan.json",
+      "gate": "spec_complete",
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "spec-review",
+      "record": ".plumbline/runs/183da93-20261005T111543Z/spec-review.json",
+      "gate": "no_surviving_blockers",
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "tests",
+      "record": ".plumbline/runs/183da93-20261005T111543Z/tests.json",
+      "gate": "tests_fail_on_stub",
+      "passed": true,
+      "rounds": 6
+    },
+    {
+      "id": "test-review",
+      "record": ".plumbline/runs/183da93-20261005T111543Z/test-review.json",
+      "gate": "no_surviving_blockers",
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "build",
+      "record": ".plumbline/runs/183da93-20261005T111543Z/build.json",
+      "gate": null,
+      "passed": true,
+      "rounds": 3
+    },
+    {
+      "id": "verify",
+      "record": ".plumbline/runs/183da93-20261005T111543Z/verify.json",
+      "gate": "verify_green",
+      "passed": true,
+      "rounds": 7
+    },
+    {
+      "id": "review",
+      "record": ".plumbline/runs/183da93-20261005T111543Z/review.json",
+      "gate": "no_surviving_blockers",
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "reduce",
+      "record": ".plumbline/runs/183da93-20261005T111543Z/reduce.json",
+      "gate": "all_gates_passed",
+      "passed": true,
+      "rounds": 1
+    }
+  ],
+  "tokens": {
+    "by_model": {
+      "claude-haiku-4-5-20251001": {
+        "output": 55177,
+        "fresh_input": 258089,
+        "cache_read": 3012184,
+        "output_lower_bound": 70
+      },
+      "claude-sonnet-5-5": {
+        "output": 36930,
+        "fresh_input": 584256,
+        "cache_read": 3005942,
+        "output_lower_bound": 125
+      }
+    },
+    "orchestration": {
+      "claude-sonnet-5-5": {
+        "output": 4395,
+        "fresh_input": 198672,
+        "cache_read": 3324837,
+        "output_lower_bound": 98
+      }
+    }
+  },
+  "verdict": "pass",
+  "notes": [
+    "declared row code.M, measured row code.M",
+    "the output tokens of claude-haiku-4-5-20251001 are a lower bound: 70 messages had no final usage entry, only the snapshot taken as a message starts",
+    "the output tokens of claude-sonnet-5-5 are a lower bound: 125 messages had no final usage entry, only the snapshot taken as a message starts",
+    "the output tokens of claude-sonnet-5-5 (orchestration) are a lower bound: 98 messages had no final usage entry, only the snapshot taken as a message starts"
+  ],
+  "open_findings": [
+    {
+      "stage": "spec-review",
+      "id": "requirements-1",
+      "lens": "requirements",
+      "severity": "MINOR",
+      "file": ".plumbline/runs/183da93-20261005T111543Z/plan.json",
+      "line": 116,
+      "claim": "The spec makes dash-leading tags valid (a lone '-') but no criterion or test says how the CLI receives them, and argparse treats '-x' after --tag as an option, so the 'one stderr line, exit 2' contract is not what the user sees.",
+      "failure_scenario": "`tasklist add X --tag -x` or `tasklist tag 1 -x`: argparse rejects it with a multi-line usage message instead of storing the tag (valid per AC-1) or printing `error: invalid tag: -x`; a build that does this passes every listed test."
+    },
+    {
+      "stage": "test-review",
+      "id": "tests-1",
+      "lens": "tests",
+      "severity": "MINOR",
+      "file": "tests/test_tags.py",
+      "line": 276,
+      "claim": "The decision that every list path validates stored tags is only tested for hidden done tasks under plain list; a bad-tags done task under list --all and under list --overdue is never exercised.",
+      "failure_scenario": "A change that stops validating done tasks under --all (or starts validating done tasks under --overdue, contradicting the open-only check in cmd_list) passes every test, since the only done task with bad tags is checked with `list --tag x`."
+    },
+    {
+      "stage": "review",
+      "id": "tests-1",
+      "lens": "tests",
+      "severity": "MINOR",
+      "file": "tests/test_tags.py",
+      "line": 189,
+      "claim": "AC-6's clause that the --overdue stored-due-date validation and errors are unchanged is not tested in combination with --tag, nor is the interplay of the new tag check with the due-date check on the --overdue path.",
+      "failure_scenario": "A change that applies the tag filter or bad_tags check before the due-date validation, or skips due validation when --tag is given, changes the error for a file with an invalid due date and still passes every test in test_tags.py (the --overdue --tag case only uses valid dates)."
+    }
+  ],
+  "gaps": [
+    {
+      "stage": "review",
+      "id": "G-1",
+      "kind": "missing_test",
+      "detail": "No test lists a finished task carrying tags: list --all should print '[x] 2 Two #work'. Add a test in tests/test_tags.py (list --all on MIXED, or cli.format_task directly with done True and tags, with and without due), since AC-5 verification names format_task directly and no test calls it.",
+      "ac": "AC-5"
+    },
+    {
+      "stage": "review",
+      "id": "G-2",
+      "kind": "edge_case",
+      "detail": "core.remove_tag removes only the first occurrence via list.remove. A hand-edited stored task with duplicate tags (['a','a']) keeps 'a' after untag and the tags key survives, so untag then succeeds a second time. Remove all occurrences (list comprehension) or add a test fixing the behaviour in tests/test_tags.py and tasklist/core.py.",
+      "ac": "AC-4"
+    },
+    {
+      "stage": "review",
+      "id": "G-3",
+      "kind": "missing_test",
+      "detail": "No test covers list --overdue combined with tags on a done tagged task or --all with --overdue, and none covers the check order in cmd_list --overdue (an invalid stored due date on one task together with malformed tags on another: which error wins). Add a test pinning the order in cmd_list, as AC-6 says the existing --overdue validation errors are unchanged.",
+      "ac": "AC-6"
+    },
+    {
+      "stage": "review",
+      "id": "G-4",
+      "kind": "edge_case",
+      "detail": "cmd_add validates tags before the title and due date, so add '' --tag Bad or add X --due nope --tag Bad reports the tag error; the spec leaves the order unspecified and no test pins it. Add a test in tests/test_tags.py documenting the chosen order for blank title and bad due combined with a bad tag, or set the order explicitly in tasklist/cli.py cmd_add.",
+      "ac": "AC-2"
+    }
+  ]
+}

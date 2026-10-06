@@ -1,0 +1,127 @@
+{
+  "goal": "Add task priorities (high, normal, low) to tasklist: `add --priority`, priority-ordered `list` with a `! ` marker on high tasks, and safe handling of old and malformed stored data.",
+  "non_goals": [
+    "No command to change the priority of an existing task.",
+    "No priority filter on list, and no change to tag/untag/done behaviour (done adds no \"priority\" key).",
+    "No change to the order of `list --overdue` (oldest due first, then id).",
+    "No change to the README beyond what is needed, and no new dependencies."
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "statement": "`add TITLE --priority P` with P in high, normal, low succeeds as before (prints `added ID`, exit 0). The default is normal. The stored task has key \"priority\" equal to \"high\" or \"low\" for those values, and NO \"priority\" key for normal (given explicitly or by default), so a normal task is stored exactly as before. core.add_task takes a `priority` argument (default \"normal\") with the same effect.",
+      "verification": "CLI and core tests that read the JSON file after add for each of the three values and for no flag."
+    },
+    {
+      "id": "AC-2",
+      "statement": "`add TITLE --priority V` where V is not exactly one of high, normal, low (e.g. `urgent`, `HIGH`, empty string) exits 2, writes exactly one stderr line `error: invalid priority: V`, prints nothing on stdout, and does not create or change the task file. core.add_task raises ValueError for such a value and leaves the list unchanged. argparse `choices` must not be used (its message differs).",
+      "verification": "CLI test with `--priority urgent` and `--priority HIGH`: assert status 2, stderr == `error: invalid priority: urgent\\n`, file absent or byte-identical to before. Core test for ValueError and unchanged list."
+    },
+    {
+      "id": "AC-3",
+      "statement": "`list` (without --all and without --overdue) prints open tasks ordered by priority (high, then normal, then low), then by id ascending. A task with no \"priority\" key counts as normal.",
+      "verification": "CLI test with open tasks ids 1 low, 2 normal, 3 high, 4 high, 5 (no key): expect order 3, 4, 2, 5, 1."
+    },
+    {
+      "id": "AC-4",
+      "statement": "A task whose priority is high is printed with `! ` (exclamation mark, one space) between its id and its title, e.g. `[ ] 3 ! Pay rent`; the due and tag suffixes follow the title as before, e.g. `[ ] 3 ! Pay rent (due 2026-10-01) #home`. Normal and low tasks, and tasks without the key, print exactly as before (no marker). The marker also shows in `list --overdue`, `list --tag` and, for done high tasks, `list --all` (`[x] 3 ! Pay rent`).",
+      "verification": "CLI tests comparing exact output lines for a high task with and without due and tags, a normal task, a low task, and a legacy task without the key; plus a high task seen via --overdue and --all."
+    },
+    {
+      "id": "AC-5",
+      "statement": "`list --all` prints every task, done ones included, ordered by priority (high, then normal, then low; a missing \"priority\" key counts as normal), then by id ascending. Done status does not affect position. A file without priorities therefore lists in plain id order, exactly as today. core.visible_tasks implements this ordering for both show_all values (show_all False: the open tasks in the same order).",
+      "verification": "CLI/core test: tasks 1 done low, 2 open low, 3 done high, 4 open high, 5 open normal; `list --all` order is 3, 4, 5, 1, 2. Existing expectations stay unchanged: tests/test_core.py [1,2,3] and tests/test_tags.py \"1\",\"2\",\"5\" (no priorities there, so id order)."
+    },
+    {
+      "id": "AC-6",
+      "statement": "`list --overdue` keeps its order (due date ascending, then id), regardless of priority. `list --tag NAME` filters first-class as before and keeps the order of whichever list mode it is combined with (AC-3 order, AC-5 order with --all, overdue order with --overdue).",
+      "verification": "CLI tests: overdue tasks with a high task due later than a normal one still lists the normal (older) one first; `list --tag work` and `list --all --tag work` on tagged tasks of mixed priority follow the AC-3 / AC-5 orders."
+    },
+    {
+      "id": "AC-7",
+      "statement": "Task files written by earlier versions (no \"priority\" key anywhere) still load, list (output identical to today for tasks without tags/priority, in id order since all count as normal), and `done` works on them; `done` leaves the task's keys unchanged (adds no \"priority\" key).",
+      "verification": "Test with a hand-written legacy JSON file: list output equals the old format; run `done 1`, then read the file: task 1 has exactly keys id, title, done."
+    },
+    {
+      "id": "AC-8",
+      "statement": "A stored \"priority\" that is present but not exactly one of the strings high, normal, low (e.g. \"urgent\", \"HIGH\", 3, null, [\"high\"]) makes `list`, `list --all`, `list --overdue` and `list --tag X` exit 2 with exactly one stderr line `error: task ID has an invalid priority: REPR` (ID the task id, REPR the Python repr of the stored value), no stdout, no exception, and no change to the file. The check covers every task the mode would show (open tasks; with --all also done tasks; with --overdue every open task, like due dates and tags) and runs before any ordering, so an unsortable value never raises. For `list --tag X` the check runs on every task the mode would show BEFORE the --tag filter is applied (as the tags check bad_tags runs on `shown` before tagged_tasks), so a task with a bad priority that does not carry tag X still makes `list --tag X` exit 2. A malformed value on a done task does not affect plain `list`.",
+      "verification": "Parametrised CLI test over the bad values above and the four list modes with one task id 7 (no tags, so for `list --tag x` it does not carry tag x): status 2, stderr == `error: task 7 has an invalid priority: 'urgent'\\n` (repr per value), empty stdout, file unchanged. One test that a bad priority on a done task is ignored by plain `list`."
+    }
+  ],
+  "interfaces": [
+    {
+      "name": "core.add_task",
+      "file": "tasklist/core.py",
+      "signature": "def add_task(tasks: list[Task], title: str, due: str | None = None, tags: list[str] | None = None, priority: str = \"normal\") -> Task  # ValueError if priority not in PRIORITIES; stores \"priority\" only when not normal"
+    },
+    {
+      "name": "core.PRIORITIES / Task.priority",
+      "file": "tasklist/core.py",
+      "signature": "PRIORITIES = (\"high\", \"normal\", \"low\")  # rank = index; Task gains priority: NotRequired[str]"
+    },
+    {
+      "name": "core.visible_tasks",
+      "file": "tasklist/core.py",
+      "signature": "def visible_tasks(tasks: list[Task], show_all: bool = False) -> list[Task]  # shown tasks (open only, or all if show_all) sorted by (priority rank, id)"
+    },
+    {
+      "name": "cli.format_task",
+      "file": "tasklist/cli.py",
+      "signature": "def format_task(task: core.Task) -> str  # inserts '! ' before the title when task.get('priority') == 'high'"
+    },
+    {
+      "name": "cli.bad_priority",
+      "file": "tasklist/cli.py",
+      "signature": "def bad_priority(tasks: list[core.Task]) -> str | None  # message `task ID has an invalid priority: REPR` for the first task whose present \"priority\" is not in core.PRIORITIES"
+    },
+    {
+      "name": "cli add --priority / cmd_add / cmd_list",
+      "file": "tasklist/cli.py",
+      "signature": "add --priority VALUE (plain string, validated in cmd_add via fail(f\"invalid priority: {value}\")); cmd_list calls bad_priority on the shown tasks, before ordering and before the --tag filter (like bad_tags)"
+    }
+  ],
+  "test_plan": [
+    {
+      "ac": "AC-1",
+      "scenario": "On an empty file run `add A --priority high`, `add B --priority low`, `add C --priority normal`, `add D`: each prints `added N`, exit 0; file has priority \"high\" on 1, \"low\" on 2 and no priority key on 3 and 4. core.add_task(tasks, \"x\", priority=\"high\") sets the key; default sets none."
+    },
+    {
+      "ac": "AC-2",
+      "scenario": "`add A --priority urgent` and `add A --priority HIGH` on a file holding one task: status 2, stderr exactly `error: invalid priority: urgent` (resp. HIGH) plus newline, stdout empty, file bytes unchanged; on a missing file, no file is created. core.add_task(..., priority=\"urgent\") raises ValueError and the list is unchanged."
+    },
+    {
+      "ac": "AC-3",
+      "scenario": "Stored open tasks 1 low, 2 normal, 3 high, 4 high, 5 without key; `list` prints ids in order 3, 4, 2, 5, 1."
+    },
+    {
+      "ac": "AC-4",
+      "scenario": "Stored: id 3 high title `Pay rent` -> line `[ ] 3 ! Pay rent`; same with due 2026-10-01 and tags [home] -> `[ ] 3 ! Pay rent (due 2026-10-01) #home`; a normal and a low task print `[ ] 1 Buy milk` with no marker; done high task under --all prints `[x] 3 ! Pay rent`."
+    },
+    {
+      "ac": "AC-5",
+      "scenario": "Stored 1 done low, 2 open low, 3 done high, 4 open high, 5 open normal; `list --all` order is 3, 4, 5, 1, 2. core.visible_tasks(tasks, show_all=True) gives the same ids; visible_tasks(tasks) gives 4, 5, 2. A file with no priorities and tasks 1 done, 2 open, 3 open lists in id order 1, 2, 3 under --all; existing tests (test_core [1, 2, 3], test_tags \"1\",\"2\",\"5\") pass unchanged."
+    },
+    {
+      "ac": "AC-6",
+      "scenario": "TASKLIST_TODAY=2026-10-05; task 1 high due 2026-10-03, task 2 normal due 2026-10-01: `list --overdue` prints 2 then 1, and task 1 line has the `! ` marker. Tagged tasks `work` with priorities low (id 1) and high (id 2): `list --tag work` prints 2 then 1."
+    },
+    {
+      "ac": "AC-7",
+      "scenario": "Write a legacy file `[{\"id\":1,\"title\":\"A\",\"done\":false},{\"id\":2,\"title\":\"B\",\"done\":false}]`: `list` prints `[ ] 1 A` and `[ ] 2 B`; `done 1` exits 0 and the stored task 1 is exactly {id, title, done: true}."
+    },
+    {
+      "ac": "AC-8",
+      "scenario": "Single stored task id 7 with no tags (so it does not carry tag x) and priority in \"urgent\", \"HIGH\", 3, null, [\"high\"]; for each of `list`, `list --all`, `list --overdue` (TASKLIST_TODAY set), `list --tag x`: status 2, stderr one line `error: task 7 has an invalid priority: <repr>`, stdout empty, file unchanged. `list --tag x` exits 2 because the check runs before the tag filter. Also: a done task with bad priority plus an open task: plain `list` exits 0 and prints the open task."
+    }
+  ],
+  "risks": [
+    "Request finding spec-review/requirements-1 (round 1): AC-8 now states explicitly that the stored-priority check runs on every task the mode would show before the --tag filter, as bad_tags runs on `shown` before tagged_tasks, and the test task has no tag x.",
+    "Choice (request silent on done tasks under `list --all`): every shown task, done included, orders by priority then id (AC-5). Why: a file without priorities then lists in plain id order exactly as today, which request item 8 requires; an open-first, done-after ordering broke that. No existing test expectation changes (tests/test_core.py [1,2,3], tests/test_tags.py \"1\",\"2\",\"5\").",
+    "Choice (request silent): a normal priority is not stored, so files and `add` output for normal tasks are byte-identical to before; only high and low write the key.",
+    "Choice: the `! ` marker shows on every high task including done ones under --all (the request says 'a high-priority task').",
+    "Choice: the invalid-priority stored-value message is `task ID has an invalid priority: REPR` (repr of the stored value), mirroring the tags message `task ID has invalid tags: ...` but using the due-date wording; tests pin it exactly. If a task has several malformed fields, which one is reported first is not specified and tests use one fault at a time.",
+    "Validation must run before sorting: sorting by an unknown or unhashable priority would raise, so cmd_list validates first (bad_priority) and the sort uses a rank lookup only on validated values.",
+    "Size: about 60 lines of code plus tests, within code.M."
+  ],
+  "split_proposal": null
+}

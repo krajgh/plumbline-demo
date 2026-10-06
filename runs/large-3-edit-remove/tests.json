@@ -1,0 +1,20 @@
+{
+  "tests": [
+    {"id": "T-1", "file": "tests/test_edit.py", "name": "test_ac1_edit_title_strips_and_keeps_other_keys", "ac_ids": ["AC-1"], "scenario": "edit --title '  New  ' strips, prints edited 1, other keys and tasks unchanged"},
+    {"id": "T-2", "file": "tests/test_edit.py", "name": "test_ac1_blank_or_empty_title_is_an_error", "ac_ids": ["AC-1"], "scenario": "blank and empty-string title exit 2 with the blank-title error, file unchanged"},
+    {"id": "T-3", "file": "tests/test_edit.py", "name": "test_ac2_due_set_replace_and_no_due", "ac_ids": ["AC-2"], "scenario": "set, replace, --no-due, --no-due again"},
+    {"id": "T-4", "file": "tests/test_edit.py", "name": "test_ac2_invalid_due_is_an_error", "ac_ids": ["AC-2"], "scenario": "invalid dates and empty --due give invalid due date error, file unchanged"},
+    {"id": "T-5", "file": "tests/test_edit.py", "name": "test_ac2_due_with_no_due_is_an_error", "ac_ids": ["AC-2"], "scenario": "--due with --no-due exits 2, one error line, unchanged"},
+    {"id": "T-6", "file": "tests/test_edit.py", "name": "test_ac3_priority_high_low_and_normal", "ac_ids": ["AC-3"], "scenario": "high, low set; normal deletes key, also when absent"},
+    {"id": "T-7", "file": "tests/test_edit.py", "name": "test_ac3_invalid_priority_is_an_error", "ac_ids": ["AC-3"], "scenario": "urgent exits 2 with exact stderr, unchanged"},
+    {"id": "T-8", "file": "tests/test_edit.py", "name": "test_ac4_no_field_and_unknown_id_are_errors", "ac_ids": ["AC-4"], "scenario": "edit 1 alone; unknown id, also before bad value"},
+    {"id": "T-9", "file": "tests/test_edit.py", "name": "test_ac4_a_bad_value_leaves_no_partial_edit", "ac_ids": ["AC-4"], "scenario": "good title plus bad priority/due leaves file byte-identical"},
+    {"id": "T-10", "file": "tests/test_edit.py", "name": "test_ac4_edit_task_raises_before_mutating", "ac_ids": ["AC-4"], "scenario": "core edit_task raises ValueError/KeyError without mutating"},
+    {"id": "T-11", "file": "tests/test_edit.py", "name": "test_ac5_remove_keeps_ids_and_next_add_is_max_plus_one", "ac_ids": ["AC-5"], "scenario": "remove 2 of 1,2,3; add gives 4; removing top ids then add gives max+1"},
+    {"id": "T-12", "file": "tests/test_edit.py", "name": "test_ac5_remove_unknown_id_is_an_error", "ac_ids": ["AC-5"], "scenario": "remove 9 exits 2 with exact stderr, unchanged"},
+    {"id": "T-13", "file": "tests/test_edit.py", "name": "test_ac5_remove_task_removes_and_returns", "ac_ids": ["AC-5"], "scenario": "core remove_task removes, returns, KeyError on unknown"},
+    {"id": "T-14", "file": "tests/test_edit.py", "name": "test_ac6_legacy_file_lists_completes_and_edits_without_new_keys", "ac_ids": ["AC-6"], "scenario": "legacy file lists, edits add no extra keys, done works"}
+  ],
+  "files_written": ["tests/test_edit.py"],
+  "stub_check": {"ran": true, "all_failed_on_assertions": false, "detail": "run against the built code: 162 passed, 0 failed; tests collected fine"}
+}

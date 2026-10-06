@@ -1,0 +1,18 @@
+{
+  "base": "origin/main",
+  "head": "a061f09ed7d83184e4fec5ef4874ed38acb00772",
+  "merge_base": "a061f09ed7d83184e4fec5ef4874ed38acb00772",
+  "files": [],
+  "types": [
+    "code"
+  ],
+  "lines": 0,
+  "size": "M",
+  "row": "code.M",
+  "intent": "feature",
+  "symlinks": [],
+  "notes": [
+    "the remote's default branch is not known here, so the base fell back to 'origin/main'",
+    "nothing has changed yet, so the row code.M was declared, not measured"
+  ]
+}

@@ -1,0 +1,123 @@
+{
+  "commit": "183da93c466b9ca14d06caf146035da07ef3a7ee",
+  "run_id": "cf98e93-20261005T103921Z",
+  "row": "code.S",
+  "stages": [
+    {
+      "id": "intake",
+      "record": ".plumbline/runs/cf98e93-20261005T103921Z/intake.json",
+      "gate": null,
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "plan",
+      "record": ".plumbline/runs/cf98e93-20261005T103921Z/plan.json",
+      "gate": "spec_complete",
+      "passed": true,
+      "rounds": 0
+    },
+    {
+      "id": "tests",
+      "record": ".plumbline/runs/cf98e93-20261005T103921Z/tests.json",
+      "gate": "reproduces_on_head",
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "build",
+      "record": ".plumbline/runs/cf98e93-20261005T103921Z/build.json",
+      "gate": null,
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "verify",
+      "record": ".plumbline/runs/cf98e93-20261005T103921Z/verify.json",
+      "gate": "verify_green",
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "review",
+      "record": ".plumbline/runs/cf98e93-20261005T103921Z/review.json",
+      "gate": "no_surviving_blockers",
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "reduce",
+      "record": ".plumbline/runs/cf98e93-20261005T103921Z/reduce.json",
+      "gate": "all_gates_passed",
+      "passed": true,
+      "rounds": 1
+    }
+  ],
+  "tokens": {
+    "by_model": {
+      "claude-haiku-4-5-20251001": {
+        "output": 7022,
+        "fresh_input": 36940,
+        "cache_read": 386876,
+        "output_lower_bound": 14
+      },
+      "claude-sonnet-5-5": {
+        "output": 2636,
+        "fresh_input": 57874,
+        "cache_read": 256201,
+        "output_lower_bound": 19
+      }
+    },
+    "orchestration": {
+      "claude-sonnet-5-5": {
+        "output": 262,
+        "fresh_input": 30524,
+        "cache_read": 280293,
+        "output_lower_bound": 12
+      }
+    }
+  },
+  "verdict": "pass",
+  "notes": [
+    "declared row code.S, measured row code.S",
+    "the output tokens of claude-haiku-4-5-20251001 are a lower bound: 14 messages had no final usage entry, only the snapshot taken as a message starts",
+    "the output tokens of claude-sonnet-5-5 are a lower bound: 19 messages had no final usage entry, only the snapshot taken as a message starts",
+    "the output tokens of claude-sonnet-5-5 (orchestration) are a lower bound: 12 messages had no final usage entry, only the snapshot taken as a message starts",
+    "intent fix: the record of plan was supplied, not written by an agent"
+  ],
+  "open_findings": [
+    {
+      "stage": "review",
+      "id": "tests-1",
+      "lens": "tests",
+      "severity": "MINOR",
+      "file": "tests/test_cli.py",
+      "line": 278,
+      "claim": "The id assertion is a bare substring check that cannot tell the task id from other text in the line, and the null case only checks for the Python repr 'None', not the stored null.",
+      "failure_scenario": "A message such as 'task None has an invalid due date: 7' or one that prints the wrong id would still pass because only the substrings '7' and str(bad) are checked; the other task ids are never varied."
+    }
+  ],
+  "gaps": [
+    {
+      "stage": "review",
+      "id": "G-1",
+      "kind": "missing_test",
+      "detail": "parse_date in tasklist/core.py gained an isinstance(text, str) guard but no unit test calls parse_date directly with a non-string (None, int) to check it raises ValueError; only the CLI path is tested. Add a test in the core tests.",
+      "ac": "AC-1"
+    },
+    {
+      "stage": "review",
+      "id": "G-2",
+      "kind": "edge_case",
+      "detail": "Only None and an int are tested. Other non-string JSON values (bool true/false, list, dict, float) are handled by the same guard but not exercised; a test parametrized with e.g. True, [], {}, 1.5 would pin the message format (str(value) differs from the stored JSON, e.g. None vs null, True vs true).",
+      "ac": "AC-1"
+    },
+    {
+      "stage": "review",
+      "id": "G-3",
+      "kind": "edge_case",
+      "detail": "A done task with a non-string due is skipped by the check in cmd_list (not task['done']); no test confirms that list --overdue exits 0 for a done task with due null, nor that a non-string due on a done task does not crash overdue_tasks.",
+      "ac": "AC-1"
+    }
+  ]
+}

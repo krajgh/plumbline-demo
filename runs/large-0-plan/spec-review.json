@@ -1,0 +1,67 @@
+{
+  "target": "plan",
+  "round": 1,
+  "lenses": [
+    "requirements"
+  ],
+  "findings": [
+    {
+      "id": "requirements-1",
+      "lens": "requirements",
+      "file": ".plumbline/runs/183da93-20261005T111104Z/plan.json",
+      "line": 31,
+      "claim": "AC-5 applies priority ordering to `list --all` (done tasks included), but the request orders only open tasks; the spec widens the request and its own risk list admits it.",
+      "failure_scenario": "A build that keeps `list --all` in plain id order, as the request implies for done tasks, fails the spec's AC-5 and the test-plan line 'list --all orders done tasks by the same rule'. A build that sorts done tasks by priority passes, although the request never asked for it.",
+      "rule": "request item 5: 'list orders open tasks by priority (high, then normal, then low), then by id'",
+      "evidence": "`list` (with or without --all, --tag) orders the shown tasks by priority (high, normal, low) then by id.",
+      "outside_code": null,
+      "severity": "MINOR",
+      "evidence_unverified": true
+    },
+    {
+      "id": "requirements-2",
+      "lens": "requirements",
+      "file": ".plumbline/runs/183da93-20261005T111104Z/plan.json",
+      "line": 114,
+      "claim": "The test plan requires stderr that 'contains the value' for an empty tag, which AC-1 says is invalid, but an empty value cannot be observed in the message, so the check does not test the criterion.",
+      "failure_scenario": "`add 'a' --tag ''` produces `error: invalid tag: `. A containment check on '' always passes, so a build that prints a different message passes the test. The criterion 'naming the offending value' has no observable result for this case.",
+      "rule": "AC-1: stderr is exactly one line of the form `error: invalid tag: VALUE`",
+      "evidence": "add 'a' --tag Work (and 'a b', 'x_y', '', '\u00e9'): exit 2, stderr is exactly one line containing the value",
+      "outside_code": null,
+      "severity": "MINOR",
+      "evidence_unverified": true
+    }
+  ],
+  "defenses": [
+    {
+      "finding_id": "requirements-1",
+      "defender": "screen-1",
+      "verdict": "conceded",
+      "quote": "`list` (with or without --all, --tag) orders the shown tasks by priority (high, normal, low) then by id.",
+      "reason": "AC-5 in the plan applies priority ordering to all tasks shown by `list`, including done tasks when `--all` is used. The request item 5 mentions only 'open tasks by priority'. The plan widens the request, and the risk list at line 131 explicitly acknowledges this: 'list ordering by priority also applies with --all (done tasks sorted the same way); the request only states it for open tasks.' This is an intentional design choice documented in the risk section."
+    },
+    {
+      "finding_id": "requirements-2",
+      "defender": "screen-1",
+      "verdict": "conceded",
+      "quote": "add 'a' --tag Work (and 'a b', 'x_y', '', '\u00e9'): exit 2, stderr is exactly one line containing the value",
+      "reason": "The test plan at line 114 includes empty string '' as a test case for invalid tags and uses 'containing the value' as the check criterion. However, a containment check on an empty string will always pass since any string contains the empty string. This means the test cannot properly validate that the offending value (empty string) was actually named in the stderr message for this edge case, even though AC-1 requires 'naming the offending value'. This is a flaw in how the test validates the empty tag edge case."
+    }
+  ],
+  "survivors": [
+    "requirements-1",
+    "requirements-2"
+  ],
+  "gaps": [],
+  "blockers_surviving": 0,
+  "routes": {
+    "builder": [],
+    "test-writer": [],
+    "planner": [
+      "requirements-1",
+      "requirements-2"
+    ]
+  },
+  "panel_needed": [],
+  "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

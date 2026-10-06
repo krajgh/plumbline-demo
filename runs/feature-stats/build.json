@@ -1,0 +1,10 @@
+{
+  "files_changed": ["tasklist/core.py", "tasklist/cli.py"],
+  "summary": "Added core.task_stats (counts plus sorted per-tag open counts) and the cli stats subcommand with --tag. cmd_stats resolves today first, validates open tasks' due dates, then tags (open tasks, or all tasks with --tag), then priorities, reusing bad_tags/bad_priority, then prints the lines.",
+  "acs_addressed": ["AC-1", "AC-2", "AC-3", "AC-4", "AC-5", "AC-6", "AC-7", "AC-8"],
+  "assumptions": [
+    "Relied on store.load returning [] for a missing file without creating it, and stats never calls store.save.",
+    "Under --tag, the tag check runs over all tasks in file order, so the first bad-tag task by file order is named.",
+    "The git branch `stats` already exists per git status; no branch work was done."
+  ]
+}

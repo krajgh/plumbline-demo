@@ -1,0 +1,32 @@
+{
+  "goal": "list --overdue reports a stored due date that is not a string (such as null or a number) the way it reports any malformed due date, instead of crashing with a traceback.",
+  "non_goals": [
+    "Changing how add --due validates input",
+    "Changing list without --overdue",
+    "Repairing or rewriting the stored file"
+  ],
+  "acceptance_criteria": [
+    {
+      "id": "AC-1",
+      "statement": "When an open task's stored due date is not a string (for example \"due\": null or \"due\": 20261001), list --overdue no longer crashes with a traceback: it exits with code 2 and writes one line on stderr that names the task's id and its stored due date, as for any other malformed due date.",
+      "verification": "A CLI test per non-string value (null and an integer) checking exit code 2, a single stderr line containing the task id and the stored value, and no traceback."
+    }
+  ],
+  "interfaces": [
+    {
+      "name": "list --overdue",
+      "file": "tasklist/cli.py",
+      "signature": "tasklist list --overdue"
+    }
+  ],
+  "test_plan": [
+    {
+      "ac": "AC-1",
+      "scenario": "Store a task with \"due\": null, and another run with \"due\": 20261001; run list --overdue; expect exit 2, one stderr line naming the task id and its bad due date, no traceback."
+    }
+  ],
+  "risks": [
+    "Catching too broad an exception could hide unrelated bugs"
+  ],
+  "split_proposal": null
+}

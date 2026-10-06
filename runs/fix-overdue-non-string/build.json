@@ -1,0 +1,6 @@
+{
+  "files_changed": ["tasklist/core.py"],
+  "summary": "core.parse_date now raises ValueError for non-string input (isinstance check) instead of letting re.fullmatch raise TypeError, so list --overdue reports null/integer stored due dates via the existing malformed-date path (exit 2, one stderr line with task id and value).",
+  "acs_addressed": ["AC-1"],
+  "assumptions": ["Fixed in parse_date, the shared function, rather than catching TypeError in cli.py; the stored value prints via the existing f-string (None shows as None)."]
+}

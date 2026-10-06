@@ -1,0 +1,30 @@
+{
+  "lens": "tests",
+  "findings": [
+    {
+      "id": "tests-1",
+      "lens": "tests",
+      "file": "tests/test_edit.py",
+      "line": 80,
+      "claim": "The --due, --no-due and --priority success tests run only on bare tasks, so nothing checks that these edits leave the task's other keys (tags, title, done, id) and other tasks untouched.",
+      "failure_scenario": "An edit_task that rebuilds the dict on --priority/--due, or drops tags when it deletes a key, passes every success test. A task with tags and a due date loses its tags on `edit 1 --priority normal` and no test fails. Only the --title test uses a full task.",
+      "rule": "AC-1, AC-2, AC-3",
+      "evidence": "    assert run(path, \"edit\", \"1\", \"--priority\", \"high\") == 0\n    assert store.load(path)[0][\"priority\"] == \"high\"",
+      "outside_code": null,
+      "severity": "MAJOR"
+    },
+    {
+      "id": "tests-2",
+      "lens": "tests",
+      "file": "tests/test_edit.py",
+      "line": 114,
+      "claim": "The core no-mutation test pairs a valid title with each bad value, so it never catches a partial edit where a valid priority or due is applied before a later field fails. It also never tests a combined successful edit.",
+      "failure_scenario": "edit_task validates the title first, applies priority, then validates due. `edit_task(tasks, 1, priority='low', due='nope')` raises after mutating priority. The CLI tests cannot see this because the file is not saved on error. The core test never uses priority with a bad due, so it passes.",
+      "rule": "AC-4",
+      "evidence": "core.edit_task(tasks, 1, **{\"title\": \"New\", **kwargs})",
+      "outside_code": null,
+      "severity": "MINOR"
+    }
+  ],
+  "diff_sha256": "4b8e4b0c913c94ced9d6626c0c07d7d1a6cb46cf3e3c31b98e345d340ab38d2c"
+}

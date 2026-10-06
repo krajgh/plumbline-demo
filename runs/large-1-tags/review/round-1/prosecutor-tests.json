@@ -1,0 +1,18 @@
+{
+  "lens": "tests",
+  "findings": [
+    {
+      "id": "tests-1",
+      "lens": "tests",
+      "file": "tests/test_tags.py",
+      "line": 189,
+      "claim": "AC-6's clause that the --overdue stored-due-date validation and errors are unchanged is not tested in combination with --tag, nor is the interplay of the new tag check with the due-date check on the --overdue path.",
+      "failure_scenario": "A change that applies the tag filter or bad_tags check before the due-date validation, or skips due validation when --tag is given, changes the error for a file with an invalid due date and still passes every test in test_tags.py (the --overdue --tag case only uses valid dates).",
+      "rule": "AC-6",
+      "evidence": "([\"--overdue\", \"--tag\", \"work\"], [\"5\"]),",
+      "outside_code": null,
+      "severity": "MINOR"
+    }
+  ],
+  "diff_sha256": "c1cc5b9e8f60857af3e3e6f3e5f9b645ef76af85a87b92c202d9a628f682f203"
+}

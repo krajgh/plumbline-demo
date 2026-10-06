@@ -1,0 +1,10 @@
+{
+  "files_changed": ["tasklist/cli.py"],
+  "summary": "cmd_list runs the existing bad_tags check on every path. Plain list and --all check the tasks they display. --overdue checks every open task (the ones it examines, as it already does for stored due dates), before filtering to the overdue ones, so a bad tags value on an open task that is not overdue or has no due date still exits 2 with 'error: task N has invalid tags: <repr>'. The --tag filter runs after the check.",
+  "acs_addressed": ["AC-1", "AC-2", "AC-3", "AC-4", "AC-5", "AC-6", "AC-7", "AC-8"],
+  "assumptions": [
+    "Plain list and --all validate only the tasks they would show; done tasks are unchecked on plain list.",
+    "--overdue validates all open tasks, not only the overdue ones, mirroring its existing due-date validation; the verify failure showed tasks that were not displayed must still be rejected.",
+    "tag and untag scoping unchanged."
+  ]
+}

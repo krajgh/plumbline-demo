@@ -1,0 +1,30 @@
+{
+  "lens": "requirements",
+  "findings": [
+    {
+      "id": "requirements-1",
+      "lens": "requirements",
+      "file": ".plumbline/runs/0f44eee-20261006T032301Z/plan.json",
+      "line": 47,
+      "claim": "AC-8 puts the branch requirement in a test (`git branch --show-current` is `stats`), which a unit test suite cannot observe reliably, so the criterion has no result a test can check.",
+      "failure_scenario": "The suite runs in CI on a detached HEAD or another branch name, or the test is skipped. Either the test fails for a correct build or no test checks the branch at all.",
+      "rule": "requirements lens: what no test could check",
+      "evidence": "The work is on a new branch `stats` created from main.",
+      "outside_code": null,
+      "severity": "MINOR"
+    },
+    {
+      "id": "requirements-2",
+      "lens": "requirements",
+      "file": ".plumbline/runs/0f44eee-20261006T032301Z/plan.json",
+      "line": 37,
+      "claim": "The request says a malformed stored value is reported, with no exemption. AC-6 narrows this by never checking done tasks' due dates and priorities, and done tasks' tags unless --tag is given.",
+      "failure_scenario": "A done task 4 has priority `urgent`. The request item 5 reads as exit 2 naming task 4. The spec requires exit 0 for plain `stats`, so a reader of the request would see a mismatch. The choice is recorded only as a risk and was not confirmed.",
+      "rule": "request item 5; requirements lens: what is misread",
+      "evidence": "Done tasks' due dates and priorities are not checked without --tag, and not at all otherwise.",
+      "outside_code": null,
+      "severity": "MINOR"
+    }
+  ],
+  "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

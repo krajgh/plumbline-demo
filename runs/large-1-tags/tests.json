@@ -1,0 +1,28 @@
+{
+  "tests": [
+    {"id": "T-1", "file": "tests/test_tags.py", "name": "test_ac1_add_stores_tags_in_order_without_duplicates", "ac_ids": ["AC-1"], "scenario": "add with --tag work --tag home --tag work stores [work, home], prints added 1; no --tag stores no tags key; 2026-q4 accepted"},
+    {"id": "T-3", "file": "tests/test_tags.py", "name": "test_ac1_core_add_task_dedupes_tags_and_omits_empty", "ac_ids": ["AC-1", "AC-2"], "scenario": "core.add_task dedupes, omits empty, ValueError on bad tag without mutating"},
+    {"id": "T-4", "file": "tests/test_tags.py", "name": "test_ac1_is_valid_tag", "ac_ids": ["AC-1", "AC-2"], "scenario": "is_valid_tag on valid, empty, uppercase, space, underscore, non-ASCII, trailing newline, non-ASCII digit"},
+    {"id": "T-5", "file": "tests/test_tags.py", "name": "test_ac2_add_with_an_invalid_tag_is_refused", "ac_ids": ["AC-2"], "scenario": "Work, 'a b', a_b, é, ok+BAD, Bad1+Bad2 (first named): exit 2, exact stderr naming the invalid tag, empty stdout, file unchanged"},
+    {"id": "T-7", "file": "tests/test_tags.py", "name": "test_ac2_invalid_tag_does_not_create_the_file", "ac_ids": ["AC-2"], "scenario": "nonexistent file path stays uncreated after invalid tag"},
+    {"id": "T-8", "file": "tests/test_tags.py", "name": "test_ac3_tag_appends_and_retagging_is_a_no_op", "ac_ids": ["AC-3"], "scenario": "tag appends, prints tagged 1, re-tag leaves list unchanged"},
+    {"id": "T-9", "file": "tests/test_tags.py", "name": "test_ac3_ac4_refused_tag_commands_leave_the_file_unchanged", "ac_ids": ["AC-3", "AC-4"], "scenario": "tag 1 Bad, tag 99 work, tag 99 Bad (invalid tag wins), untag 99 work: exact error, file unchanged"},
+    {"id": "T-12", "file": "tests/test_tags.py", "name": "test_ac3_ac4_core_tag_errors", "ac_ids": ["AC-3", "AC-4"], "scenario": "core.add_tag and core.remove_tag ValueError/KeyError ordering, success, key deleted when empty"},
+    {"id": "T-13", "file": "tests/test_tags.py", "name": "test_ac4_untag_removes_one_then_deletes_the_key_when_empty", "ac_ids": ["AC-4"], "scenario": "untag one of two, then last: tags key deleted"},
+    {"id": "T-14", "file": "tests/test_tags.py", "name": "test_ac4_untag_a_tag_the_task_lacks_is_refused", "ac_ids": ["AC-4"], "scenario": "untag missing tag on tagged and untagged task: exact error, file unchanged"},
+    {"id": "T-17", "file": "tests/test_tags.py", "name": "test_ac5_list_shows_tags_after_the_due_date", "ac_ids": ["AC-5"], "scenario": "list prints #tags after due; no tags or empty list prints plain line"},
+    {"id": "T-19", "file": "tests/test_tags.py", "name": "test_ac6_list_tag_filters_and_combines_with_other_flags", "ac_ids": ["AC-6"], "scenario": "list --tag work shows 1,5; with --all 1,2,5; with --overdue (TASKLIST_TODAY) 5; nosuch and prefix wor print nothing"},
+    {"id": "T-24", "file": "tests/test_tags.py", "name": "test_ac7_done_keeps_the_tags", "ac_ids": ["AC-7"], "scenario": "tag then done: stored task keeps tags, done True (existing tests cover old files)"},
+    {"id": "T-25", "file": "tests/test_tags.py", "name": "test_ac8_empty_tag_is_refused_with_the_exact_message", "ac_ids": ["AC-8", "AC-2"], "scenario": "add Title --tag '': exit 2, err == 'error: invalid tag: \\n' exactly, out empty, file unchanged"},
+    {"id": "T-27", "file": "tests/test_tags.py", "name": "test_ac1_ac3_ac4_ac6_dash_leading_tags_use_the_argparse_forms", "ac_ids": ["AC-1", "AC-3", "AC-4", "AC-6"], "scenario": "add --tag=-x --tag=-; untag 1 -- -; list --tag=-x shows only the -x task; untag/tag 1 -- -x"},
+    {"id": "T-30", "file": "tests/test_tags.py", "name": "test_ac3_ac4_help_prints_usage_and_exits_zero", "ac_ids": ["AC-3", "AC-4"], "scenario": "tag --help and untag --help print usage and exit 0"},
+    {"id": "T-31", "file": "tests/test_tags.py", "name": "test_ac6_malformed_stored_tags_name_the_task_by_id", "ac_ids": ["AC-6"], "scenario": "stored tags 'ab', null, ['ok',3], 5: tag, untag, list, list --all, list --overdue and list --tag x exit 2 with exactly 'error: task 7 has invalid tags: <repr>', empty stdout, no crash, file unchanged"},
+    {"id": "T-32", "file": "tests/test_tags.py", "name": "test_ac6_bad_tags_of_other_or_hidden_tasks_are_ignored", "ac_ids": ["AC-6", "AC-3", "AC-4"], "scenario": "other task's bad tags ignored by tag/untag; hidden done task's bad tags ignored by list --tag; invalid NAME wins over bad stored tags"}
+  ],
+  "files_written": ["tests/test_tags.py"],
+  "stub_check": {
+    "ran": true,
+    "all_failed_on_assertions": false,
+    "detail": "Full suite: 101 passed, 4 failed (list --overdue with malformed stored tags exits 0; builder still changing cli.py); file grew 265 to about 285 lines."
+  }
+}

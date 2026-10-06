@@ -1,0 +1,25 @@
+{
+ "tests": [
+  {"id": "T1", "file": "tests/test_stats.py", "name": "test_ac1_stats_prints_six_counts", "ac_ids": ["AC-1"], "scenario": "mixed open/done/priorities, six exact lines"},
+  {"id": "T2", "file": "tests/test_stats.py", "name": "test_ac1_overdue_matches_list_overdue", "ac_ids": ["AC-1"], "scenario": "overdue equals list --overdue line count"},
+  {"id": "T3", "file": "tests/test_stats.py", "name": "test_ac2_due_today_and_done_not_overdue", "ac_ids": ["AC-2"], "scenario": "due today and done tasks are not overdue"},
+  {"id": "T4", "file": "tests/test_stats.py", "name": "test_ac2_invalid_today_is_an_error", "ac_ids": ["AC-2"], "scenario": "garbage TASKLIST_TODAY exits 2, empty stdout, one stderr line"},
+  {"id": "T5", "file": "tests/test_stats.py", "name": "test_ac3_per_tag_lines_ordered", "ac_ids": ["AC-3"], "scenario": "tag lines by count desc then name; done-only tags absent"},
+  {"id": "T6", "file": "tests/test_stats.py", "name": "test_ac3_no_tags_means_six_lines", "ac_ids": ["AC-3"], "scenario": "no open tags gives exactly six lines"},
+  {"id": "T7", "file": "tests/test_stats.py", "name": "test_ac4_tag_limits_every_figure", "ac_ids": ["AC-4"], "scenario": "--tag work limits all figures, no # lines"},
+  {"id": "T8", "file": "tests/test_stats.py", "name": "test_ac4_unknown_tag_gives_zeros", "ac_ids": ["AC-4"], "scenario": "--tag nosuch gives six zero lines"},
+  {"id": "T9", "file": "tests/test_stats.py", "name": "test_ac5_missing_and_empty_file", "ac_ids": ["AC-5"], "scenario": "missing file and [] give zeros; missing file not created"},
+  {"id": "T10", "file": "tests/test_stats.py", "name": "test_ac6_bad_open_task_value_is_an_error", "ac_ids": ["AC-6"], "scenario": "each bad due/tags/priority on open task 3 exits 2 naming task 3"},
+  {"id": "T11", "file": "tests/test_stats.py", "name": "test_ac6_done_task_checks", "ac_ids": ["AC-6"], "scenario": "done bad tags checked only under --tag; done bad due/priority ignored"},
+  {"id": "T12", "file": "tests/test_stats.py", "name": "test_ac6_due_checked_before_priority", "ac_ids": ["AC-6"], "scenario": "bad due on task 2 reported before bad priority on task 1"},
+  {"id": "T13", "file": "tests/test_stats.py", "name": "test_ac7_legacy_tasks", "ac_ids": ["AC-7"], "scenario": "legacy bare tasks counted, no tag lines"},
+  {"id": "T14", "file": "tests/test_stats.py", "name": "test_ac8_stats_does_not_write_file", "ac_ids": ["AC-8"], "scenario": "file bytes unchanged after stats"},
+  {"id": "T15", "file": "tests/test_stats.py", "name": "test_ac6_error_message_is_exact", "ac_ids": ["AC-6"], "scenario": "exact per-field stderr message"},
+  {"id": "T16", "file": "tests/test_stats.py", "name": "test_ac6_tags_checked_after_due_before_priority", "ac_ids": ["AC-6"], "scenario": "due before tags before priority across tasks"},
+  {"id": "T17", "file": "tests/test_stats.py", "name": "test_ac6_tag_filter_still_checks_untagged_open_tasks", "ac_ids": ["AC-6", "AC-4"], "scenario": "--tag still reports bad due/priority on open task lacking the tag"},
+  {"id": "T18", "file": "tests/test_stats.py", "name": "test_ac3_duplicate_tag_counts_once", "ac_ids": ["AC-3"], "scenario": "duplicate tag in one task counts once, with and without --tag"},
+  {"id": "T19", "file": "tests/test_stats.py", "name": "test_ac2_empty_today_uses_clock", "ac_ids": ["AC-2"], "scenario": "empty TASKLIST_TODAY falls back to the clock"}
+ ],
+ "files_written": ["tests/test_stats.py"],
+ "stub_check": {"ran": true, "all_failed_on_assertions": false, "detail": "Revision against built code: full suite 173 passed, including the new tests; not expected to fail."}
+}

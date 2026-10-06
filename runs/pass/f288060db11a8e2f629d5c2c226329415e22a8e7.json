@@ -1,0 +1,154 @@
+{
+  "commit": "f288060db11a8e2f629d5c2c226329415e22a8e7",
+  "run_id": "0f44eee-20261006T032301Z",
+  "row": "code.M",
+  "stages": [
+    {
+      "id": "intake",
+      "record": ".plumbline/runs/0f44eee-20261006T032301Z/intake.json",
+      "gate": null,
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "plan",
+      "record": ".plumbline/runs/0f44eee-20261006T032301Z/plan.json",
+      "gate": "spec_complete",
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "spec-review",
+      "record": ".plumbline/runs/0f44eee-20261006T032301Z/spec-review.json",
+      "gate": "no_surviving_blockers",
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "tests",
+      "record": ".plumbline/runs/0f44eee-20261006T032301Z/tests.json",
+      "gate": "tests_fail_on_stub",
+      "passed": true,
+      "rounds": 2
+    },
+    {
+      "id": "test-review",
+      "record": ".plumbline/runs/0f44eee-20261006T032301Z/test-review.json",
+      "gate": "no_surviving_blockers",
+      "passed": true,
+      "rounds": 2
+    },
+    {
+      "id": "build",
+      "record": ".plumbline/runs/0f44eee-20261006T032301Z/build.json",
+      "gate": null,
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "verify",
+      "record": ".plumbline/runs/0f44eee-20261006T032301Z/verify.json",
+      "gate": "verify_green",
+      "passed": true,
+      "rounds": 2
+    },
+    {
+      "id": "review",
+      "record": ".plumbline/runs/0f44eee-20261006T032301Z/review.json",
+      "gate": "no_surviving_blockers",
+      "passed": true,
+      "rounds": 2
+    },
+    {
+      "id": "reduce",
+      "record": ".plumbline/runs/0f44eee-20261006T032301Z/reduce.json",
+      "gate": "all_gates_passed",
+      "passed": true,
+      "rounds": 1
+    }
+  ],
+  "tokens": {
+    "by_model": {
+      "claude-haiku-4-5-20251001": {
+        "output": 19126,
+        "fresh_input": 113743,
+        "cache_read": 1530067,
+        "output_lower_bound": 41
+      },
+      "claude-sonnet-5-5": {
+        "output": 10940,
+        "fresh_input": 267050,
+        "cache_read": 1045314,
+        "output_lower_bound": 69
+      }
+    },
+    "orchestration": {
+      "claude-sonnet-5-5": {
+        "output": 713,
+        "fresh_input": 133830,
+        "cache_read": 962715,
+        "output_lower_bound": 34
+      }
+    }
+  },
+  "verdict": "pass",
+  "notes": [
+    "declared row code.M, measured row code.M",
+    "the output tokens of claude-haiku-4-5-20251001 are a lower bound: 41 messages had no final usage entry, only the snapshot taken as a message starts",
+    "the output tokens of claude-sonnet-5-5 are a lower bound: 69 messages had no final usage entry, only the snapshot taken as a message starts",
+    "the output tokens of claude-sonnet-5-5 (orchestration) are a lower bound: 34 messages had no final usage entry, only the snapshot taken as a message starts"
+  ],
+  "open_findings": [
+    {
+      "stage": "spec-review",
+      "id": "requirements-1",
+      "lens": "requirements",
+      "severity": "MINOR",
+      "file": ".plumbline/runs/0f44eee-20261006T032301Z/plan.json",
+      "line": 47,
+      "claim": "AC-8 puts the branch requirement in a test (`git branch --show-current` is `stats`), which a unit test suite cannot observe reliably, so the criterion has no result a test can check.",
+      "failure_scenario": "The suite runs in CI on a detached HEAD or another branch name, or the test is skipped. Either the test fails for a correct build or no test checks the branch at all."
+    },
+    {
+      "stage": "spec-review",
+      "id": "requirements-2",
+      "lens": "requirements",
+      "severity": "MINOR",
+      "file": ".plumbline/runs/0f44eee-20261006T032301Z/plan.json",
+      "line": 37,
+      "claim": "The request says a malformed stored value is reported, with no exemption. AC-6 narrows this by never checking done tasks' due dates and priorities, and done tasks' tags unless --tag is given.",
+      "failure_scenario": "A done task 4 has priority `urgent`. The request item 5 reads as exit 2 naming task 4. The spec requires exit 0 for plain `stats`, so a reader of the request would see a mismatch. The choice is recorded only as a risk and was not confirmed."
+    },
+    {
+      "stage": "test-review",
+      "id": "tests-1",
+      "lens": "tests",
+      "severity": "MINOR",
+      "file": "tests/test_stats.py",
+      "line": 132,
+      "claim": "No test checks that a done task's bad due date or priority is ignored under --tag, although AC-6 says they are not checked at all except without --tag being irrelevant.",
+      "failure_scenario": "An implementation that validates all tasks' due and priority whenever --tag is given would exit 2 on a file with a done task having due 'bad' under `stats --tag x`; every test still passes because the done-task due/priority case is only run in plain `stats`."
+    },
+    {
+      "stage": "test-review",
+      "id": "tests-2",
+      "lens": "tests",
+      "severity": "MINOR",
+      "file": "tests/test_stats.py",
+      "line": 119,
+      "claim": "AC-6 'first offending task by id' is never tested with two offenders in the same field, so an implementation reporting the last (or any) offender passes.",
+      "failure_scenario": "File with open tasks 3 and 5 both having bad due dates: code that reports task 5 (e.g. iterating in reverse) passes all tests, since every test has only one offender per field."
+    },
+    {
+      "stage": "review",
+      "id": "tests-1",
+      "lens": "tests",
+      "severity": "MINOR",
+      "file": "tests/test_stats.py",
+      "line": 125,
+      "claim": "No test checks that under --tag a done task's bad due date or priority is still ignored (AC-6 says only done tags are checked with --tag).",
+      "failure_scenario": "A change makes cmd_stats validate due/priority of all tasks when --tag is given; `stats --tag x` on a file with a done task with due 'bad' would exit 2, and every test still passes."
+    }
+  ],
+  "gaps": []
+}

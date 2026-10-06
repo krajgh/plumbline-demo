@@ -1,0 +1,17 @@
+{
+  "tests": [
+    {
+      "id": "T-1",
+      "file": "tests/test_cli.py",
+      "name": "test_ac1_overdue_with_a_non_string_stored_due_names_the_task",
+      "ac_ids": ["AC-1"],
+      "scenario": "Store an open task id 7 with due null, and with due 20261001; list --overdue must return 2 with one stderr line naming 7 and the stored value, and no exception."
+    }
+  ],
+  "files_written": ["tests/test_cli.py"],
+  "stub_check": {
+    "ran": true,
+    "all_failed_on_assertions": true,
+    "detail": "Both parametrized cases fail today: main() raises TypeError instead of returning 2; the other 40 tests pass."
+  }
+}

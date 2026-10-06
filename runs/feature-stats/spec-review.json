@@ -1,0 +1,68 @@
+{
+  "target": "plan",
+  "round": 1,
+  "lenses": [
+    "requirements"
+  ],
+  "findings": [
+    {
+      "id": "requirements-1",
+      "lens": "requirements",
+      "file": ".plumbline/runs/0f44eee-20261006T032301Z/plan.json",
+      "line": 47,
+      "claim": "AC-8 puts the branch requirement in a test (`git branch --show-current` is `stats`), which a unit test suite cannot observe reliably, so the criterion has no result a test can check.",
+      "failure_scenario": "The suite runs in CI on a detached HEAD or another branch name, or the test is skipped. Either the test fails for a correct build or no test checks the branch at all.",
+      "rule": "requirements lens: what no test could check",
+      "evidence": "The work is on a new branch `stats` created from main.",
+      "outside_code": null,
+      "severity": "MINOR",
+      "evidence_unverified": true
+    },
+    {
+      "id": "requirements-2",
+      "lens": "requirements",
+      "file": ".plumbline/runs/0f44eee-20261006T032301Z/plan.json",
+      "line": 37,
+      "claim": "The request says a malformed stored value is reported, with no exemption. AC-6 narrows this by never checking done tasks' due dates and priorities, and done tasks' tags unless --tag is given.",
+      "failure_scenario": "A done task 4 has priority `urgent`. The request item 5 reads as exit 2 naming task 4. The spec requires exit 0 for plain `stats`, so a reader of the request would see a mismatch. The choice is recorded only as a risk and was not confirmed.",
+      "rule": "request item 5; requirements lens: what is misread",
+      "evidence": "Done tasks' due dates and priorities are not checked without --tag, and not at all otherwise.",
+      "outside_code": null,
+      "severity": "MINOR",
+      "evidence_unverified": true
+    }
+  ],
+  "defenses": [
+    {
+      "finding_id": "requirements-1",
+      "defender": "screen-1",
+      "verdict": "conceded",
+      "quote": "Test: file bytes unchanged after stats; full existing suite still passes; `git branch --show-current` is `stats`.",
+      "reason": "AC-8's verification criterion does include a requirement to check `git branch --show-current` returns `stats`, which unit tests cannot reliably verify when run in CI on a detached HEAD or alternate branch, making this part of the verification unstable."
+    },
+    {
+      "finding_id": "requirements-2",
+      "defender": "screen-1",
+      "verdict": "conceded",
+      "quote": "A malformed stored value (due date, tags or priority) is reported the way `list` reports it: exit 2, one line on stderr naming the task by id, nothing on stdout.",
+      "reason": "There is a mismatch between the request (item 5) stating malformed values are generally reported, and AC-6's detailed narrowing which exempts done tasks' due dates and priorities from validation except under --tag. This creates ambiguity about validation scope for readers of the request."
+    }
+  ],
+  "survivors": [
+    "requirements-1",
+    "requirements-2"
+  ],
+  "gaps": [],
+  "blockers_surviving": 0,
+  "routes": {
+    "builder": [],
+    "test-writer": [],
+    "planner": [
+      "requirements-1",
+      "requirements-2"
+    ]
+  },
+  "panel_needed": [],
+  "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "target_sha256": "9d06eb0e783fffb35ac44cac2af1bf756e5c65969f27db12051a061adf5f2afd"
+}

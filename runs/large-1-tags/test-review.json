@@ -1,0 +1,37 @@
+{
+  "target": "tests",
+  "round": 1,
+  "lenses": [
+    "tests"
+  ],
+  "findings": [
+    {
+      "id": "tests-1",
+      "lens": "tests",
+      "file": "tests/test_tags.py",
+      "line": 276,
+      "claim": "The decision that every list path validates stored tags is only tested for hidden done tasks under plain list; a bad-tags done task under list --all and under list --overdue is never exercised.",
+      "failure_scenario": "A change that stops validating done tasks under --all (or starts validating done tasks under --overdue, contradicting the open-only check in cmd_list) passes every test, since the only done task with bad tags is checked with `list --tag x`.",
+      "rule": "Decision: every list path validates stored tags, exit 2 with `error: task N has invalid tags: <repr>`",
+      "evidence": "run(path, \"list\", \"--tag\", \"x\") == 0  # hidden done task 2 is not checked",
+      "outside_code": null,
+      "severity": "MINOR",
+      "evidence_unverified": false
+    }
+  ],
+  "defenses": [],
+  "survivors": [
+    "tests-1"
+  ],
+  "gaps": [],
+  "blockers_surviving": 0,
+  "routes": {
+    "builder": [],
+    "test-writer": [
+      "tests-1"
+    ],
+    "planner": []
+  },
+  "panel_needed": [],
+  "diff_sha256": "c1cc5b9e8f60857af3e3e6f3e5f9b645ef76af85a87b92c202d9a628f682f203"
+}

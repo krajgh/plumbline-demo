@@ -1,0 +1,54 @@
+{
+  "lens": "tests",
+  "findings": [
+    {
+      "id": "tests-1",
+      "lens": "tests",
+      "file": "tests/test_stats.py",
+      "line": 136,
+      "claim": "Only due-before-priority ordering is tested; AC-6's full order (due, then tags, then priority) is not, so a wrong order between tags and the other fields passes.",
+      "failure_scenario": "An implementation that checks tags before due, or priority before tags, still passes all tests: e.g. open task 1 with tags \"x\" and open task 2 with due 2026-13-45 would report task 1 instead of task 2, and no test covers it.",
+      "rule": "AC-6",
+      "evidence": "path = write(tmp_path, [t(1, priority=\"urgent\"), t(2, due=\"2026-13-45\")])",
+      "outside_code": null,
+      "severity": "MINOR"
+    },
+    {
+      "id": "tests-2",
+      "lens": "tests",
+      "file": "tests/test_stats.py",
+      "line": 67,
+      "claim": "AC-2's rule that an empty TASKLIST_TODAY falls back to the clock is not tested for stats.",
+      "failure_scenario": "With TASKLIST_TODAY set to an empty string, an implementation that treats it as invalid (exit 2) or that parses it directly passes every test here.",
+      "rule": "AC-2",
+      "evidence": "monkeypatch.setenv(\"TASKLIST_TODAY\", \"garbage\")",
+      "outside_code": null,
+      "severity": "MINOR"
+    },
+    {
+      "id": "tests-3",
+      "lens": "tests",
+      "file": "tests/test_stats.py",
+      "line": 73,
+      "claim": "The risk 'a task counts once per tag' (duplicate tag inside one task) has no test.",
+      "failure_scenario": "An open task with tags [\"a\", \"a\"] would be counted twice (#a: 2) by an implementation that does not dedupe, and all tests still pass.",
+      "rule": "AC-3",
+      "evidence": "t(1, tags=[\"b\", \"a\"]), t(2, tags=[\"b\"]), t(3, tags=[\"c\"]), t(4, True, tags=[\"z\"]),",
+      "outside_code": null,
+      "severity": "MINOR"
+    },
+    {
+      "id": "tests-4",
+      "lens": "tests",
+      "file": "tests/test_stats.py",
+      "line": 150,
+      "claim": "AC-8's verification items (branch is `stats`, existing suite passes) have no test; also T10 asserts only the `task 3 ` prefix, not the specified message per field.",
+      "failure_scenario": "Work done on the wrong branch is not detected by the tests. An implementation reporting a bad due date with the priority message, or any other wrong reuse of messages, would pass T10 because only the prefix `error: task 3 ` is checked.",
+      "rule": "AC-8, AC-6",
+      "evidence": "assert err.startswith(\"error: task 3 \") and err.count(\"\\n\") == 1",
+      "outside_code": null,
+      "severity": "MINOR"
+    }
+  ],
+  "diff_sha256": "2e56f198b3a5846fa07327fec905a10115764dfab89314d86cb5ef86853d4840"
+}

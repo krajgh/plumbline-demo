@@ -1,0 +1,18 @@
+{
+  "lens": "correctness",
+  "findings": [
+    {
+      "id": "correctness-1",
+      "lens": "correctness",
+      "file": "tasklist/cli.py",
+      "line": 169,
+      "claim": "A valid tag that starts with a dash (for example '-work' or '-') cannot be passed to tag/untag or as a separate --tag argument, because argparse reads it as an option.",
+      "failure_scenario": "`tasklist tag 1 -work` exits 2 with an argparse usage error instead of tagging, although AC-1 makes '-work' a valid tag; `add X --tag -a` fails the same way. Only `--` or `--tag=-a` works.",
+      "rule": "AC-1, AC-3 (valid tags match ^[a-z0-9-]+$)",
+      "evidence": "sub.add_argument(\"name\", metavar=\"NAME\", help=\"tag name\")",
+      "outside_code": "Python argparse: arguments starting with '-' that are not negative numbers are parsed as options.",
+      "severity": "MINOR"
+    }
+  ],
+  "diff_sha256": "c1cc5b9e8f60857af3e3e6f3e5f9b645ef76af85a87b92c202d9a628f682f203"
+}

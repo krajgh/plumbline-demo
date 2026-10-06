@@ -1,0 +1,30 @@
+{
+  "lens": "tests",
+  "findings": [
+    {
+      "id": "tests-1",
+      "lens": "tests",
+      "file": "tests/test_stats.py",
+      "line": 132,
+      "claim": "No test checks that a done task's bad due date or priority is ignored under --tag, although AC-6 says they are not checked at all except without --tag being irrelevant.",
+      "failure_scenario": "An implementation that validates all tasks' due and priority whenever --tag is given would exit 2 on a file with a done task having due 'bad' under `stats --tag x`; every test still passes because the done-task due/priority case is only run in plain `stats`.",
+      "rule": "AC-6",
+      "evidence": "path = write(tmp_path, [t(1), t(2, True, due=\"bad\", priority=\"urgent\")])\n    assert stats(path, capsys)[0] == 0",
+      "outside_code": null,
+      "severity": "MINOR"
+    },
+    {
+      "id": "tests-2",
+      "lens": "tests",
+      "file": "tests/test_stats.py",
+      "line": 119,
+      "claim": "AC-6 'first offending task by id' is never tested with two offenders in the same field, so an implementation reporting the last (or any) offender passes.",
+      "failure_scenario": "File with open tasks 3 and 5 both having bad due dates: code that reports task 5 (e.g. iterating in reverse) passes all tests, since every test has only one offender per field.",
+      "rule": "AC-6",
+      "evidence": "path = write(tmp_path, [t(1), t(3, **field)])",
+      "outside_code": null,
+      "severity": "MINOR"
+    }
+  ],
+  "diff_sha256": "a4be3a84d8d31640f73d293231d1857c09e256f4fe4ec88544e1b1f8d3545577"
+}

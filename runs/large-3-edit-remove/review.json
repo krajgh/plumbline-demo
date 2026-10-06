@@ -1,0 +1,68 @@
+{
+  "target": "diff",
+  "round": 1,
+  "lenses": [
+    "correctness",
+    "tests",
+    "security",
+    "data",
+    "boundaries"
+  ],
+  "findings": [
+    {
+      "id": "tests-1",
+      "lens": "tests",
+      "file": "tests/test_edit.py",
+      "line": 99,
+      "claim": "No test covers the order 'unknown id before no-field' (edit with an unknown id and no option), which AC-4 and the plan's risks state.",
+      "failure_scenario": "If edit_task checked 'nothing to edit' before looking up the id, `edit 99` would print `error: nothing to edit` instead of `error: no task with id 99` and every test would still pass, because the unknown-id cases always pass --title or --priority.",
+      "rule": "AC-4",
+      "evidence": "assert_error(path, capsys, before, \"error: no task with id 99\", \"edit\", \"99\", \"--title\", \"x\")",
+      "outside_code": null,
+      "severity": "MINOR",
+      "evidence_unverified": false
+    }
+  ],
+  "defenses": [
+    {
+      "finding_id": "tests-1",
+      "defender": "screen-1",
+      "verdict": "conceded",
+      "quote": "    assert_error(path, capsys, before, None, \"edit\", \"1\")\n    assert_error(path, capsys, before, \"error: no task with id 99\", \"edit\", \"99\", \"--title\", \"x\")\n    # an unknown id is reported before a bad value\n    assert_error(path, capsys, before, \"error: no task with id 99\", \"edit\", \"99\", \"--priority\", \"urgent\")",
+      "reason": "The test file lacks a test case for edit with an unknown ID and no field options. The function test_ac4_no_field_and_unknown_id_are_errors tests edit 1 with no options (line 102), edit 99 with --title (line 103), and edit 99 with --priority (line 105), but does not test edit 99 with no field options. This gap means the test suite would not catch a regression if the check order were changed to report 'nothing to edit' before checking if the ID exists."
+    }
+  ],
+  "survivors": [
+    "tests-1"
+  ],
+  "gaps": [
+    {
+      "id": "G-1",
+      "kind": "missing_test",
+      "detail": "No test applies several valid options in one edit (e.g. `edit 1 --title X --no-due --priority low`, or --title with --due and --priority). Add a CLI test in tests/test_edit.py checking all fields change together and the other keys (done, tags) and other tasks stay intact.",
+      "ac": "AC-1"
+    },
+    {
+      "id": "G-2",
+      "kind": "missing_test",
+      "detail": "AC-4 says an unknown id is reported before value errors, but `edit 99 --due 2026-12-01 --no-due` (unknown id with the due/no-due conflict) is untested. In core.edit_task the due/no-due check could move before _find unnoticed. Add this case to test_ac4_no_field_and_unknown_id_are_errors, expecting 'error: no task with id 99'. (The `edit 99` no-option case is already finding tests-1.)",
+      "ac": "AC-4"
+    },
+    {
+      "id": "G-3",
+      "kind": "edge_case",
+      "detail": "Strictness of --priority and --due inputs is not pinned by any test: `--priority HIGH`, `--priority ' high'`, `--priority ''`, and `--due ' 2026-12-01'` or a non-ASCII-digit date are rejected by the PRIORITIES membership check and by parse_date, but only urgent, 2026-02-30, abc and the empty due string are tested. Add parametrized invalid-priority and invalid-due cases expecting the exact 'error: invalid priority: X' / 'error: invalid due date: X' and an unchanged file.",
+      "ac": "AC-3"
+    }
+  ],
+  "blockers_surviving": 0,
+  "routes": {
+    "builder": [],
+    "test-writer": [
+      "tests-1"
+    ],
+    "planner": []
+  },
+  "panel_needed": [],
+  "diff_sha256": "57e44a02d22bf9046d67cd1c967128444150df85e86e5632b7ed6c4e820dee91"
+}

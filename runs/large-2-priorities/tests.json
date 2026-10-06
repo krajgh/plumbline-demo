@@ -1,0 +1,29 @@
+{
+  "tests": [
+    {"id": "T1", "file": "tests/test_priority.py", "name": "test_ac1_add_stores_priority_only_when_not_normal", "ac_ids": ["AC-1"], "scenario": "CLI add with high/low/normal/no flag; file has key only for high and low"},
+    {"id": "T2", "file": "tests/test_priority.py", "name": "test_ac1_core_add_task_priority", "ac_ids": ["AC-1"], "scenario": "core.add_task priority arg sets key only when not normal"},
+    {"id": "T3", "file": "tests/test_priority.py", "name": "test_ac2_add_invalid_priority_is_refused", "ac_ids": ["AC-2"], "scenario": "urgent, HIGH, empty: status 2, exact stderr, no stdout, file bytes unchanged"},
+    {"id": "T4", "file": "tests/test_priority.py", "name": "test_ac2_invalid_priority_creates_no_file", "ac_ids": ["AC-2"], "scenario": "invalid priority on a missing file creates none"},
+    {"id": "T5", "file": "tests/test_priority.py", "name": "test_ac2_core_add_task_raises_and_leaves_list", "ac_ids": ["AC-2"], "scenario": "core.add_task raises ValueError, list unchanged"},
+    {"id": "T6", "file": "tests/test_priority.py", "name": "test_ac3_list_orders_open_tasks_by_priority_then_id", "ac_ids": ["AC-3"], "scenario": "ids 1 low,2 normal,3 high,4 high,5 none list as 3,4,2,5,1"},
+    {"id": "T7", "file": "tests/test_priority.py", "name": "test_ac4_high_tasks_get_a_marker_and_others_do_not", "ac_ids": ["AC-4"], "scenario": "exact lines with marker, due, tags; normal/low/legacy unmarked; done high under --all; --overdue and --tag"},
+    {"id": "T8", "file": "tests/test_priority.py", "name": "test_ac5_all_orders_done_and_open_together_by_priority_then_id", "ac_ids": ["AC-5"], "scenario": "1 done low, 2 open low, 3 done high, 4 open high, 5 open normal: list --all gives 3,4,5,1,2"},
+    {"id": "T9", "file": "tests/test_priority.py", "name": "test_ac5_all_without_priorities_is_plain_id_order", "ac_ids": ["AC-5"], "scenario": "no priorities, 1 done: list --all gives 1,2,3"},
+    {"id": "T10", "file": "tests/test_priority.py", "name": "test_ac5_core_visible_tasks_order", "ac_ids": ["AC-5"], "scenario": "core.visible_tasks show_all gives 3,4,5,1,2; default gives 4,5,2"},
+    {"id": "T11", "file": "tests/test_priority.py", "name": "test_ac6_overdue_ignores_priority_and_tag_keeps_priority_order", "ac_ids": ["AC-6"], "scenario": "overdue by due date regardless of priority; --tag work in priority order"},
+    {"id": "T12", "file": "tests/test_priority.py", "name": "test_ac6_all_with_tag_follows_all_order", "ac_ids": ["AC-6", "AC-5"], "scenario": "list --all --tag work mixes done and open in priority then id order"},
+    {"id": "T13", "file": "tests/test_priority.py", "name": "test_ac7_legacy_file_lists_and_done_adds_no_key", "ac_ids": ["AC-7"], "scenario": "legacy file lists in old format; done leaves exactly id,title,done"},
+    {"id": "T14", "file": "tests/test_priority.py", "name": "test_ac8_malformed_stored_priority_is_reported", "ac_ids": ["AC-8"], "scenario": "5 bad values x 4 list modes on an untagged task: status 2, exact stderr, no stdout, file unchanged (--tag x checks before the filter)"},
+    {"id": "T16", "file": "tests/test_priority.py", "name": "test_ac8_malformed_priority_on_a_done_task_is_reported_by_list_all", "ac_ids": ["AC-8"], "scenario": "done task with priority urgent: list --all exits 2, exact by-id stderr, empty stdout, file unchanged"},
+    {"id": "T17", "file": "tests/test_priority.py", "name": "test_ac8_bad_priority_on_a_done_task_is_ignored_by_overdue_and_tag", "ac_ids": ["AC-8"], "scenario": "done bad task plus open overdue tagged task: list --overdue and list --tag x exit 0, print only the open one, empty stderr"},
+    {"id": "T15", "file": "tests/test_priority.py", "name": "test_ac8_bad_priority_on_a_done_task_is_ignored_by_plain_list", "ac_ids": ["AC-8"], "scenario": "bad priority on done task, plain list exits 0"}
+  ],
+  "files_written": [
+    "tests/test_priority.py"
+  ],
+  "stub_check": {
+    "ran": true,
+    "all_failed_on_assertions": false,
+    "detail": "Revision against the existing build: 143 passed, 0 failed (new tests T16, T17 pass as expected)."
+  }
+}

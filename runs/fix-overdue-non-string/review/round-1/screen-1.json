@@ -1,0 +1,13 @@
+{
+  "defender": "screen-1",
+  "defenses": [
+    {
+      "finding_id": "tests-1",
+      "defender": "screen-1",
+      "verdict": "conceded",
+      "quote": "assert \"7\" in lines[0] and str(bad) in lines[0]",
+      "reason": "The test does use bare substring checks as the finding claims. The assertion cannot distinguish whether \"7\" is the task id or incidental text in the message. However, the actual implementation in cli.py formats the error message as \"task {id} has an invalid due date: {value}\" (from line 80: fail(f\"task {task['id']} has an invalid due date: {task['due']}\")), so the substrings appear in their correct positions and the test adequately verifies AC-1 despite its loose assertion pattern."
+    }
+  ],
+  "diff_sha256": "8af60b07775a91f695d6a34c539cdfcb5147b76ebc3230bb13bc013c76f40bbf"
+}

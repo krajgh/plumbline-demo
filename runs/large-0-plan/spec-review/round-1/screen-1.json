@@ -1,0 +1,20 @@
+{
+  "defender": "screen-1",
+  "defenses": [
+    {
+      "finding_id": "requirements-1",
+      "defender": "screen-1",
+      "verdict": "conceded",
+      "quote": "`list` (with or without --all, --tag) orders the shown tasks by priority (high, normal, low) then by id.",
+      "reason": "AC-5 in the plan applies priority ordering to all tasks shown by `list`, including done tasks when `--all` is used. The request item 5 mentions only 'open tasks by priority'. The plan widens the request, and the risk list at line 131 explicitly acknowledges this: 'list ordering by priority also applies with --all (done tasks sorted the same way); the request only states it for open tasks.' This is an intentional design choice documented in the risk section."
+    },
+    {
+      "finding_id": "requirements-2",
+      "defender": "screen-1",
+      "verdict": "conceded",
+      "quote": "add 'a' --tag Work (and 'a b', 'x_y', '', 'é'): exit 2, stderr is exactly one line containing the value",
+      "reason": "The test plan at line 114 includes empty string '' as a test case for invalid tags and uses 'containing the value' as the check criterion. However, a containment check on an empty string will always pass since any string contains the empty string. This means the test cannot properly validate that the offending value (empty string) was actually named in the stderr message for this edge case, even though AC-1 requires 'naming the offending value'. This is a flaw in how the test validates the empty tag edge case."
+    }
+  ],
+  "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

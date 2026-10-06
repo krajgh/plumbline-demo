@@ -1,0 +1,166 @@
+{
+  "commit": "917e870e5f2f9925535c75fb1b050cdb304458d2",
+  "run_id": "0f44eee-20261005T151939Z",
+  "row": "code.M",
+  "stages": [
+    {
+      "id": "intake",
+      "record": ".plumbline/runs/0f44eee-20261005T151939Z/intake.json",
+      "gate": null,
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "plan",
+      "record": ".plumbline/runs/0f44eee-20261005T151939Z/plan.json",
+      "gate": "spec_complete",
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "spec-review",
+      "record": ".plumbline/runs/0f44eee-20261005T151939Z/spec-review.json",
+      "gate": "no_surviving_blockers",
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "tests",
+      "record": ".plumbline/runs/0f44eee-20261005T151939Z/tests.json",
+      "gate": "tests_fail_on_stub",
+      "passed": true,
+      "rounds": 2
+    },
+    {
+      "id": "test-review",
+      "record": ".plumbline/runs/0f44eee-20261005T151939Z/test-review.json",
+      "gate": "no_surviving_blockers",
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "build",
+      "record": ".plumbline/runs/0f44eee-20261005T151939Z/build.json",
+      "gate": null,
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "verify",
+      "record": ".plumbline/runs/0f44eee-20261005T151939Z/verify.json",
+      "gate": "verify_green",
+      "passed": true,
+      "rounds": 2
+    },
+    {
+      "id": "review",
+      "record": ".plumbline/runs/0f44eee-20261005T151939Z/review.json",
+      "gate": "no_surviving_blockers",
+      "passed": true,
+      "rounds": 1
+    },
+    {
+      "id": "reduce",
+      "record": ".plumbline/runs/0f44eee-20261005T151939Z/reduce.json",
+      "gate": "all_gates_passed",
+      "passed": true,
+      "rounds": 1
+    }
+  ],
+  "tokens": {
+    "by_model": {
+      "claude-haiku-4-5-20251001": {
+        "output": 19005,
+        "fresh_input": 105070,
+        "cache_read": 1245114,
+        "output_lower_bound": 37
+      },
+      "claude-sonnet-5-5": {
+        "output": 11541,
+        "fresh_input": 258832,
+        "cache_read": 965744,
+        "output_lower_bound": 62
+      }
+    },
+    "orchestration": {
+      "claude-sonnet-5-5": {
+        "output": 1161,
+        "fresh_input": 74513,
+        "cache_read": 1112303,
+        "output_lower_bound": 38
+      }
+    }
+  },
+  "verdict": "pass",
+  "notes": [
+    "declared row code.M, measured row code.M",
+    "the output tokens of claude-haiku-4-5-20251001 are a lower bound: 37 messages had no final usage entry, only the snapshot taken as a message starts",
+    "the output tokens of claude-sonnet-5-5 are a lower bound: 62 messages had no final usage entry, only the snapshot taken as a message starts",
+    "the output tokens of claude-sonnet-5-5 (orchestration) are a lower bound: 38 messages had no final usage entry, only the snapshot taken as a message starts"
+  ],
+  "open_findings": [
+    {
+      "stage": "spec-review",
+      "id": "requirements-1",
+      "lens": "requirements",
+      "severity": "MINOR",
+      "file": ".plumbline/runs/0f44eee-20261005T151939Z/plan.json",
+      "line": 27,
+      "claim": "AC-4 defines 'no field option' as none of the options being present, but the test plan never checks an empty-string option (--title '' or --due ''), so a build that tests truthiness instead of presence passes.",
+      "failure_scenario": "A build treats `edit 1 --title ''` as no field and prints 'nothing to edit' (or treats --due '' as absent) instead of the required blank-title / invalid due date error; both exit 2, so the only visible difference is the stderr text, which no test checks for the empty string."
+    },
+    {
+      "stage": "test-review",
+      "id": "tests-1",
+      "lens": "tests",
+      "severity": "MAJOR",
+      "file": "tests/test_edit.py",
+      "line": 80,
+      "claim": "The --due, --no-due and --priority success tests run only on bare tasks, so nothing checks that these edits leave the task's other keys (tags, title, done, id) and other tasks untouched.",
+      "failure_scenario": "An edit_task that rebuilds the dict on --priority/--due, or drops tags when it deletes a key, passes every success test. A task with tags and a due date loses its tags on `edit 1 --priority normal` and no test fails. Only the --title test uses a full task."
+    },
+    {
+      "stage": "test-review",
+      "id": "tests-2",
+      "lens": "tests",
+      "severity": "MINOR",
+      "file": "tests/test_edit.py",
+      "line": 114,
+      "claim": "The core no-mutation test pairs a valid title with each bad value, so it never catches a partial edit where a valid priority or due is applied before a later field fails. It also never tests a combined successful edit.",
+      "failure_scenario": "edit_task validates the title first, applies priority, then validates due. `edit_task(tasks, 1, priority='low', due='nope')` raises after mutating priority. The CLI tests cannot see this because the file is not saved on error. The core test never uses priority with a bad due, so it passes."
+    },
+    {
+      "stage": "review",
+      "id": "tests-1",
+      "lens": "tests",
+      "severity": "MINOR",
+      "file": "tests/test_edit.py",
+      "line": 99,
+      "claim": "No test covers the order 'unknown id before no-field' (edit with an unknown id and no option), which AC-4 and the plan's risks state.",
+      "failure_scenario": "If edit_task checked 'nothing to edit' before looking up the id, `edit 99` would print `error: nothing to edit` instead of `error: no task with id 99` and every test would still pass, because the unknown-id cases always pass --title or --priority."
+    }
+  ],
+  "gaps": [
+    {
+      "stage": "review",
+      "id": "G-1",
+      "kind": "missing_test",
+      "detail": "No test applies several valid options in one edit (e.g. `edit 1 --title X --no-due --priority low`, or --title with --due and --priority). Add a CLI test in tests/test_edit.py checking all fields change together and the other keys (done, tags) and other tasks stay intact.",
+      "ac": "AC-1"
+    },
+    {
+      "stage": "review",
+      "id": "G-2",
+      "kind": "missing_test",
+      "detail": "AC-4 says an unknown id is reported before value errors, but `edit 99 --due 2026-12-01 --no-due` (unknown id with the due/no-due conflict) is untested. In core.edit_task the due/no-due check could move before _find unnoticed. Add this case to test_ac4_no_field_and_unknown_id_are_errors, expecting 'error: no task with id 99'. (The `edit 99` no-option case is already finding tests-1.)",
+      "ac": "AC-4"
+    },
+    {
+      "stage": "review",
+      "id": "G-3",
+      "kind": "edge_case",
+      "detail": "Strictness of --priority and --due inputs is not pinned by any test: `--priority HIGH`, `--priority ' high'`, `--priority ''`, and `--due ' 2026-12-01'` or a non-ASCII-digit date are rejected by the PRIORITIES membership check and by parse_date, but only urgent, 2026-02-30, abc and the empty due string are tested. Add parametrized invalid-priority and invalid-due cases expecting the exact 'error: invalid priority: X' / 'error: invalid due date: X' and an unchanged file.",
+      "ac": "AC-3"
+    }
+  ]
+}

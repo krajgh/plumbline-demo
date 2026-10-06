@@ -1,0 +1,30 @@
+{
+  "lens": "requirements",
+  "findings": [
+    {
+      "id": "requirements-1",
+      "lens": "requirements",
+      "file": ".plumbline/runs/183da93-20261005T111104Z/plan.json",
+      "line": 31,
+      "claim": "AC-5 applies priority ordering to `list --all` (done tasks included), but the request orders only open tasks; the spec widens the request and its own risk list admits it.",
+      "failure_scenario": "A build that keeps `list --all` in plain id order, as the request implies for done tasks, fails the spec's AC-5 and the test-plan line 'list --all orders done tasks by the same rule'. A build that sorts done tasks by priority passes, although the request never asked for it.",
+      "rule": "request item 5: 'list orders open tasks by priority (high, then normal, then low), then by id'",
+      "evidence": "`list` (with or without --all, --tag) orders the shown tasks by priority (high, normal, low) then by id.",
+      "outside_code": null,
+      "severity": "MINOR"
+    },
+    {
+      "id": "requirements-2",
+      "lens": "requirements",
+      "file": ".plumbline/runs/183da93-20261005T111104Z/plan.json",
+      "line": 114,
+      "claim": "The test plan requires stderr that 'contains the value' for an empty tag, which AC-1 says is invalid, but an empty value cannot be observed in the message, so the check does not test the criterion.",
+      "failure_scenario": "`add 'a' --tag ''` produces `error: invalid tag: `. A containment check on '' always passes, so a build that prints a different message passes the test. The criterion 'naming the offending value' has no observable result for this case.",
+      "rule": "AC-1: stderr is exactly one line of the form `error: invalid tag: VALUE`",
+      "evidence": "add 'a' --tag Work (and 'a b', 'x_y', '', 'é'): exit 2, stderr is exactly one line containing the value",
+      "outside_code": null,
+      "severity": "MINOR"
+    }
+  ],
+  "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

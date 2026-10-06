@@ -1,0 +1,18 @@
+{
+  "lens": "boundaries",
+  "findings": [
+    {
+      "id": "boundaries-1",
+      "lens": "boundaries",
+      "file": "tasklist/cli.py",
+      "line": 169,
+      "claim": "A valid tag that starts with a dash (allowed by [a-z0-9-]+) cannot be given as the positional NAME of tag/untag, because argparse treats it as an option.",
+      "failure_scenario": "`tasklist tag 1 -urgent` exits 2 with argparse usage text instead of tagging, although `-urgent` is a valid tag under AC-1/AC-3; likewise `untag 1 -urgent` and `list --tag -urgent` cannot remove or filter a tag that `add --tag=-urgent` stored. The error is not the specified `error: ...` line.",
+      "rule": "AC-3",
+      "evidence": "sub.add_argument(\"name\", metavar=\"NAME\", help=\"tag name\")",
+      "outside_code": "argparse: arguments beginning with '-' are parsed as options unless preceded by '--'.",
+      "severity": "MINOR"
+    }
+  ],
+  "diff_sha256": "c1cc5b9e8f60857af3e3e6f3e5f9b645ef76af85a87b92c202d9a628f682f203"
+}

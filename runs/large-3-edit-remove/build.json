@@ -1,0 +1,10 @@
+{
+  "files_changed": ["tasklist/core.py", "tasklist/cli.py"],
+  "summary": "Added core.edit_task and core.remove_task, cli cmd_edit/cmd_remove and the edit and remove subcommands. edit_task validates everything (unknown id, nothing to edit, due with no_due, blank title, bad date, bad priority) before mutating, using `is not None` for option presence; error messages are CLI-ready and cmd_edit prints str(error).",
+  "acs_addressed": ["AC-1", "AC-2", "AC-3", "AC-4", "AC-5", "AC-6"],
+  "assumptions": [
+    "No-field message is 'error: nothing to edit'; due with no-due is 'error: --due and --no-due cannot be used together'.",
+    "Check order: unknown id, nothing to edit, due with no-due, title, due, priority.",
+    "README not updated."
+  ]
+}
